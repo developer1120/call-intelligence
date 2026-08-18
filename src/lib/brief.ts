@@ -24,3 +24,29 @@ export function buildBrief(calls: AnalyzedCall[], insights: Insight[]): BriefLin
         `Booked ${booked.length} of ${sales.length} new-customer calls` +
         (open.length
           ? `. ${open.length} didn't book — about ${formatMoney(openValue)}/yr is still winnable with a same-day callback.`
+          : "."),
+      href: "/calls?view=sales",
+    });
+  }
+
+  const retention = calls.filter((c) => c.analysis.callType === "retention");
+  if (retention.length) {
+    const saved = retention.filter((c) => c.analysis.outcome.result === "saved");
+    const lost = retention.filter((c) => c.analysis.outcome.result === "cancelled");
+    const noOffer = lost.filter((c) => !c.analysis.details.saveOffer);
+    lines.push({
+      tone: saved.length >= lost.length ? "good" : "bad",
+      text:
+        `Saved ${saved.length} of ${retention.length} customers who called to cancel` +
+        (noOffer.length ? `; ${noOffer.length} cancelled without being offered a save option.` : "."),
+      href: "/calls?view=retention",
+    });
+  }
+
+  const graded = calls.filter((c) => c.analysis.scorecard);
+
+  // Referrals + "one-stop shop" are free revenue the Sales Manual asks for on every sales call.
+  const finalInfo = stepRates(graded, "sales").find((s) => s.itemId === "final_info");
+  const referralGap = finalInfo && finalInfo.of >= 3 && finalInfo.met / finalInfo.of < 0.5 ? finalInfo : null;
+  if (referralGap) {
+    lines.push({
