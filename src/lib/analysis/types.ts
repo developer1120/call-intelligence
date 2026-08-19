@@ -25,3 +25,30 @@ export interface ScoredItem {
   example: string;
   status: ItemStatus;
   /** Whether the point is awarded after evidence checks, auto-credit rules and manager overrides. */
+  credited: boolean;
+  /** Why the point was (not) awarded when it differs from the AI's raw call. */
+  creditNote: string | null;
+  reasoning: string;
+  evidence: Evidence[];
+  overridden: boolean;
+}
+
+export interface ScorecardResult {
+  id: ScorecardId;
+  name: string;
+  source: string;
+  items: ScoredItem[];
+  score: number;
+  max: number;
+  grade: Grade;
+  bands: { gold: number; green: number };
+}
+
+export interface Coaching {
+  headline: string;
+  strengths: { title: string; detail: string; evidence: Evidence | null }[];
+  improvements: {
+    itemId: string | null;
+    title: string;
+    whatHappened: string;
+    impact: string;
