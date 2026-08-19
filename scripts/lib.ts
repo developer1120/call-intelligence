@@ -19,3 +19,24 @@ export function recordings(filter?: string[]) {
     .filter((f) => /\.(mp3|wav|m4a|ogg|webm)$/i.test(f))
     .sort();
   if (!filter?.length) return files;
+  const wanted = new Set(filter.map((f) => f.toUpperCase()));
+  return files.filter((f) => wanted.has(callIdFromFile(f)) || wanted.has(callIdFromFile(f).replace("CALL-", "")));
+}
+
+export function readJson<T>(file: string): T | null {
+  return fs.existsSync(file) ? (JSON.parse(fs.readFileSync(file, "utf8")) as T) : null;
+}
+
+export function writeJson(file: string, data: unknown) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+export async function pool<T>(items: T[], size: number, fn: (item: T) => Promise<void>) {
+  const queue = [...items];
+  await Promise.all(
+    Array.from({ length: Math.min(size, queue.length) }, async () => {
+      for (let item = queue.shift(); item !== undefined; item = queue.shift()) await fn(item);
+    }),
+  );
+}
