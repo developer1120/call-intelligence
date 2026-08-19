@@ -77,3 +77,83 @@ export function buildInsights(calls: AnalyzedCall[], tasks: TaskRow[]): Insight[
     const pests = a.details.pests.length ? a.details.pests.join(", ") : null;
 
     if (a.callType === "new_customer" && (a.money.direction === "lost" || a.money.direction === "at_risk")) {
+      const objection = a.objections.find((o) => o.handling !== "resolved") ?? a.objections[0];
+      out.push({
+        ...base,
+        key: `sales:${c.call.id}`,
+        kind: "sales",
+        priority: (a.money.annualValue ?? 0) >= 400 ? "high" : "medium",
+        title: `Call back ${who(c)} — ${pests ? `${pests} quote` : "quote"} didn't book`,
+        detail: objection
+          ? `Stalled on ${objection.type.replaceAll("_", " ")}: ${objection.summary}`
+          : a.outcome.headline,
+        assignee: repName(c),
+        value: a.money.annualValue,
+        valueBasis: a.money.basis,
+        evidence: objection?.evidence ?? a.outcome.evidence[0] ?? null,
+      });
+    }
+
+    if (a.callType === "retention" || a.outcome.result === "cancelled") {
+      if (a.outcome.result === "cancelled") {
+        out.push({
+          ...base,
+          key: `winback:${c.call.id}`,
+          kind: "winback",
+          priority: "high",
+          title: `Win back ${who(c)}, who cancelled`,
+          detail: [
+            a.details.cancellationReason ? `Reason: ${lower(a.details.cancellationReason)}.` : null,
+            a.details.saveOffer ? `Offered: ${lower(a.details.saveOffer)}.` : "No save offer was made on the call.",
+          ]
+            .filter(Boolean)
+            .join(" "),
+          assignee: "Office Manager",
+          value: a.money.annualValue,
+          valueBasis: a.money.basis,
+          evidence: a.outcome.evidence[0] ?? null,
+        });
+      } else if (a.money.direction === "at_risk") {
+        out.push({
+          ...base,
+          key: `winback:${c.call.id}`,
+          kind: "winback",
+          priority: "high",
+          title: `Finish the save with ${who(c)}`,
+          detail: a.outcome.headline,
+          assignee: repName(c),
+          value: a.money.annualValue,
+          valueBasis: a.money.basis,
+          evidence: a.outcome.evidence[0] ?? null,
+        });
+      }
+    }
+
+    // Only commitments someone could forget reach the owner; routine visit/account notes stay on the call page.
+    // (Keys keep the index among company follow-ups so they match the Assign buttons on the call page.)
+    a.followUps
+      .filter((f) => f.owner === "company")
+      .forEach((f, i) => {
+        if (!PROMISE_VERB.test(f.action)) return;
+        out.push({
+          ...base,
+          key: `promise:${c.call.id}:${i}`,
+          kind: "promise",
+          priority: a.risks.some((r) => r.severity === "high") ? "high" : "medium",
+          title: cap(f.action),
+          detail: `Promised to ${who(c)} on ${c.call.label}${f.due ? ` · due ${f.due}` : ""}`,
+          assignee: repName(c),
+          value: null,
+          valueBasis: null,
+          evidence: f.evidence,
+        });
+      });
+
+    a.risks
+      .filter((r) => r.severity !== "low" && r.type !== "churn")
+      .forEach((r, i) =>
+        out.push({
+          ...base,
+          key: `risk:${c.call.id}:${i}`,
+          kind: "risk",
+          priority: r.severity === "high" ? "high" : "medium",
