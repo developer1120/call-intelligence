@@ -21,3 +21,27 @@ export interface CallListItem {
 }
 
 function isStalled(c: CallRow) {
+  return (
+    (c.status === "queued" || c.status === "transcribing" || c.status === "analyzing") &&
+    !!c.stageStartedAt &&
+    Date.now() - c.stageStartedAt.getTime() > STALL_MS
+  );
+}
+
+/** Every call with its current analysis, newest first. Filtering happens in the UI (small data). */
+export async function listCalls(): Promise<CallListItem[]> {
+  const db = await getDb();
+  const rows = await db
+    .select({ call: calls, rep: reps, analysis: analyses.data })
+    .from(calls)
+    .leftJoin(reps, eq(calls.repId, reps.id))
+    .leftJoin(analyses, and(eq(analyses.callId, calls.id), eq(analyses.isCurrent, true)))
+    .orderBy(desc(calls.createdAt), desc(calls.label));
+  return rows.map((r) => ({ call: r.call, rep: r.rep, analysis: current(r.analysis), stalled: isStalled(r.call) }));
+}
+
+export async function completedCalls() {
+  const all = await listCalls();
+  return all.filter((c): c is CallListItem & { analysis: CallAnalysis } => c.analysis !== null);
+}
+

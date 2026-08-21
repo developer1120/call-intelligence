@@ -52,3 +52,57 @@ export async function createCall(
       : input.storedKey;
   await db.insert(calls).values({
     id,
+    label: labelFor(input.filename),
+    sourceFilename: input.filename,
+    audioKey,
+    audioMime: mime,
+    audioBytes: "data" in input ? input.data.length : input.bytes,
+    status: "queued",
+    stageStartedAt: new Date(),
+  });
+  return id;
+}
+
+async function setStage(id: string, status: CallStatus, extra: Partial<typeof calls.$inferInsert> = {}) {
+  const db = await getDb();
+  await db
+    .update(calls)
+    .set({ status, stageStartedAt: new Date(), ...extra })
+    .where(eq(calls.id, id));
+}
+
+/**
+ * Pre-transcribed copies of the 20 sample recordings (made with the same Deepgram settings by
+ * `npm run transcribe`) are reused in development so re-seeding doesn't pay for transcription again.
+ */
+async function cachedTranscript(label: string): Promise<Transcript | null> {
+  if (process.env.NODE_ENV === "production") return null;
+  try {
+    const raw = await fs.readFile(path.join(process.cwd(), "data", "cache", "transcripts", `${label}.json`), "utf8");
+    return JSON.parse(raw) as Transcript;
+  } catch {
+    return null;
+  }
+}
+
+export async function loadOverrides(callId: string): Promise<Overrides> {
+  const db = await getDb();
+  const rows = await db.select().from(overrides).where(eq(overrides.callId, callId));
+  const result: Overrides = {};
+  for (const r of rows) {
+    if (r.field === "callType" && (CALL_TYPES as readonly string[]).includes(r.value)) {
+      result.callType = r.value as CallType;
+    } else if (r.field.startsWith("item:")) {
+      (result.items ??= {})[r.field.slice(5)] = r.value === "credit";
+    }
+  }
+  return result;
+}
+
+/** Transcribe (if needed) and analyze a call, recording progress on the call row. */
+export async function processCall(id: string, opts: { retranscribe?: boolean } = {}) {
+  const db = await getDb();
+  const [call] = await db.select().from(calls).where(eq(calls.id, id));
+  if (!call) throw new Error(`Call ${id} not found`);
+
+  try {
