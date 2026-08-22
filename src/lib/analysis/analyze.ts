@@ -58,3 +58,63 @@ export async function analyzeTranscript(
   }
 
   const scorecardId = scorecardFor(triage.callType);
+  const card = scorecardId ? SCORECARDS[scorecardId] : null;
+
+  let scoring: ScoringResult | null = null;
+  if (card) {
+    const reuse = cached?.scoring && Object.keys(cached.scoring.items).every((id) => card.items.some((i) => i.id === id));
+    if (reuse) {
+      scoring = cached!.scoring!;
+    } else {
+      const res = await structuredCall({
+        system: SCORING_SYSTEM,
+        user: scoringUserMessage(transcript, triage, card),
+        schema: scoringSchemaFor(card.id),
+      });
+      scoring = res.data as ScoringResult;
+      model = res.model;
+      add(usage, res.usage);
+    }
+  }
+
+  const analysis = assemble(transcript, triage, card, scoring, overrides, usage, model);
+  return { analysis, transcript };
+}
+
+export function assemble(
+  transcript: Transcript,
+  triage: Triage,
+  card: Scorecard | null,
+  scoring: ScoringResult | null,
+  overrides: Overrides,
+  usage: Usage,
+  model: string,
+): CallAnalysis {
+  const v = new EvidenceVerifier(transcript, triage.speakers);
+  const reasons: string[] = [];
+
+  const callTypeEvidence = v.locateAll(triage.callTypeEvidence);
+  const outcomeEvidence = v.locateAll(triage.outcome.evidence);
+
+  let scorecard: ScorecardResult | null = null;
+  if (card && scoring) {
+    const items: ScoredItem[] = card.items.map((rubric) => {
+      const j = scoring.items[rubric.id] ?? { status: "missed" as const, reasoning: "Not assessed.", evidence: [] };
+      const evidence = v.locateAll(j.evidence);
+      let status = j.status;
+      let credited = false;
+      let creditNote: string | null = null;
+
+      if (OBJECTION_ITEMS.has(rubric.id) && triage.objections.length === 0) {
+        // Sales manual: no objections means the rep automatically gets the 4 objection points.
+        status = "not_needed";
+        credited = true;
+        creditNote = rubric.creditWhenNotNeeded ?? null;
+      } else if (status === "not_needed") {
+        const contradiction =
+          (OBJECTION_ITEMS.has(rubric.id) && triage.objections.length > 0) ||
+          (rubric.id === "ret_teaser" && triage.outcome.result === "cancelled");
+        if (contradiction || !rubric.creditWhenNotNeeded) {
+          status = "missed";
+          creditNote = "This step was required on this call.";
+        } else {

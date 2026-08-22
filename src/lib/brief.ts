@@ -50,3 +50,29 @@ export function buildBrief(calls: AnalyzedCall[], insights: Insight[]): BriefLin
   const referralGap = finalInfo && finalInfo.of >= 3 && finalInfo.met / finalInfo.of < 0.5 ? finalInfo : null;
   if (referralGap) {
     lines.push({
+      tone: "bad",
+      text: `The referral program and "we handle every pest" weren't mentioned on ${referralGap.of - referralGap.met} of ${referralGap.of} sales calls. It's the cheapest revenue on the table: a one-line script change.`,
+      href: "/team",
+    });
+  }
+
+  const cards = ["service", "sales", "retention"] as const;
+  let worst: { label: string; missed: number; of: number } | null = null;
+  for (const id of cards) {
+    for (const s of stepRates(graded, id)) {
+      if (s.of < 3 || (referralGap && id === "sales" && s.itemId === "final_info")) continue;
+      const missed = s.of - s.met;
+      const rate = missed / s.of;
+      const worstRate = worst ? worst.missed / worst.of : -1;
+      // Ties go to the step seen on more calls.
+      if (!worst || rate > worstRate || (rate === worstRate && s.of > worst.of)) worst = { label: s.label, missed, of: s.of };
+    }
+  }
+  if (worst && worst.missed > 0) {
+    lines.push({
+      tone: "neutral",
+      text: `Biggest process gap: “${worst.label}” was missed on ${worst.missed} of ${worst.of} graded calls. Make it the focus of the next call review.`,
+      href: "/team",
+    });
+  }
+
