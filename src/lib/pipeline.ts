@@ -106,3 +106,57 @@ export async function processCall(id: string, opts: { retranscribe?: boolean } =
   if (!call) throw new Error(`Call ${id} not found`);
 
   try {
+    let transcript: Transcript | undefined;
+    if (!opts.retranscribe) {
+      const [row] = await db.select().from(transcripts).where(eq(transcripts.callId, id));
+      transcript = row?.data;
+    }
+    if (!transcript) {
+      await setStage(id, "transcribing", { error: null });
+      const cached = opts.retranscribe ? null : await cachedTranscript(call.label);
+      transcript = cached ?? (await transcribeAudio(await readAudio(call.audioKey), call.audioMime, await getRoster()));
+      await db.delete(transcripts).where(eq(transcripts.callId, id));
+      await db.insert(transcripts).values({
+        callId: id,
+        provider: transcript.provider,
+        model: transcript.model,
+        data: transcript,
+      });
+      await db
+        .update(calls)
+        .set({ durationSec: transcript.durationSec, transcriptSource: cached ? "cache" : "deepgram" })
+        .where(eq(calls.id, id));
+    }
+
+    await setStage(id, "analyzing", { error: null });
+    const result = await analyzeTranscript(transcript, await loadOverrides(id));
+    if (result.transcript !== transcript) {
+      // Speaker labels were repaired; keep the corrected transcript so the UI matches the analysis.
+      await db.update(transcripts).set({ data: result.transcript }).where(eq(transcripts.callId, id));
+    }
+    await saveAnalysis(id, result.analysis);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[pipeline] call ${id} failed:`, err);
+    await setStage(id, "failed", { error: message.slice(0, 500) });
+  }
+}
+
+/**
+ * Re-apply manager overrides. Item overrides only re-total the score; a call type change
+ * re-runs the scoring pass against the new scorecard (triage is reused).
+ */
+export async function rescoreCall(id: string) {
+  const db = await getDb();
+  const [[t], [current]] = await Promise.all([
+    db.select().from(transcripts).where(eq(transcripts.callId, id)),
+    db.select().from(analyses).where(and(eq(analyses.callId, id), eq(analyses.isCurrent, true))),
+  ]);
+  if (!t || !current) throw new Error("Call has not been analyzed yet");
+  const ov = await loadOverrides(id);
+  const sameType = !ov.callType || ov.callType === current.data.raw.triage.callType;
+  const { analysis } = await analyzeTranscript(t.data, ov, {
+    triage: current.data.raw.triage,
+    scoring: sameType ? current.data.raw.scoring : undefined,
+  });
+  // Keep the original model + usage figures when nothing was re-generated.
