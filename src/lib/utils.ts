@@ -22,3 +22,27 @@ export function formatMoney(n: number | null | undefined, opts: { compact?: bool
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
+    maximumFractionDigits: 0,
+    notation: opts.compact && n >= 10000 ? "compact" : "standard",
+  }).format(n);
+}
+
+export function formatPct(n: number | null | undefined) {
+  return n == null ? "—" : `${Math.round(n * 100)}%`;
+}
+
+export function initials(name: string | null | undefined) {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/);
+  return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
+export function plural(n: number, one: string, many = `${one}s`) {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/** Text colour for a scorecard percentage. */
+export function pctTone(p: number | null) {
+  if (p == null) return "text-ink-4";
+  return p >= 0.9 ? "text-green-ink" : p >= 0.75 ? "text-orange-ink" : "text-red-ink";
+}
