@@ -157,3 +157,83 @@ export function buildInsights(calls: AnalyzedCall[], tasks: TaskRow[]): Insight[
           key: `risk:${c.call.id}:${i}`,
           kind: "risk",
           priority: r.severity === "high" ? "high" : "medium",
+          title: `${RISK_LABEL[r.type] ?? "Risk"}: ${r.description}`,
+          detail: `${CALL_TYPE_LABEL[a.callType]} call with ${who(c)}`,
+          assignee: "Office Manager",
+          value: null,
+          valueBasis: null,
+          evidence: r.evidence,
+        }),
+      );
+
+    if (a.quality.needsReview) {
+      out.push({
+        ...base,
+        key: `review:${c.call.id}`,
+        kind: "review",
+        priority: "low",
+        title: `Double-check the AI result for ${c.call.label}`,
+        detail: a.quality.reasons.join(" · "),
+        assignee: "Office Manager",
+        value: null,
+        valueBasis: null,
+        evidence: null,
+      });
+    }
+  }
+
+  // Coaching: each rep's most-missed step, when it's a real pattern.
+  for (const rep of buildTeam(calls)) {
+    const top = rep.missed[0];
+    if (!top || rep.graded < 2 || top.missed / top.of < 0.5) continue;
+    const latest = rep.coachingLines.find((l) => l.itemId === top.itemId);
+    out.push({
+      key: `coach:${rep.id}:${top.itemId}`,
+      kind: "coaching",
+      priority: rep.avgPct !== null && rep.avgPct < 0.8 ? "medium" : "low",
+      title: `Coach ${rep.name} on “${top.label}”`,
+      detail: `Missed on ${top.missed} of ${top.of} graded calls.${latest ? ` Try: “${latest.tryThis}”` : ""}`,
+      assignee: "Manager",
+      value: null,
+      valueBasis: null,
+      callId: latest?.callId ?? null,
+      callLabel: latest?.callLabel ?? null,
+      evidence: null,
+    });
+  }
+
+  // Team-wide missed opportunity patterns.
+  const opp = new Map<string, { missed: number; of: number }>();
+  for (const c of calls) {
+    for (const o of c.analysis.opportunities) {
+      const s = opp.get(o.type) ?? { missed: 0, of: 0 };
+      s.of++;
+      if (!o.captured) s.missed++;
+      opp.set(o.type, s);
+    }
+  }
+  for (const [type, s] of opp) {
+    if (s.missed < 2) continue;
+    out.push({
+      key: `pattern:${type}`,
+      kind: "pattern",
+      priority: s.missed >= 4 ? "medium" : "low",
+      title: `${OPPORTUNITY_LABEL[type] ?? type} missed on ${s.missed} of ${s.of} calls where it fit`,
+      detail: "Make it part of next team meeting's call review.",
+      assignee: "Manager",
+      value: null,
+      valueBasis: null,
+      callId: null,
+      callLabel: null,
+      evidence: null,
+    });
+  }
+
+  return out
+    .map((i) => ({ ...i, task: taskByKey.get(i.key) ?? null }))
+    .sort(
+      (x, y) =>
+        Number(x.task?.status === "done") - Number(y.task?.status === "done") ||
+        PRIORITY_RANK[x.priority] - PRIORITY_RANK[y.priority] ||
+        (y.value ?? 0) - (x.value ?? 0),
+    );

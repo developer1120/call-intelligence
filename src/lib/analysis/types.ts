@@ -52,3 +52,30 @@ export interface Coaching {
     title: string;
     whatHappened: string;
     impact: string;
+    tryThis: string;
+    evidence: Evidence | null;
+  }[];
+}
+
+export interface Money {
+  /** Estimated first-year value of the customer relationship discussed on the call. */
+  annualValue: number | null;
+  basis: "quoted" | "estimated" | null;
+  /** How this call moved revenue: won/saved is positive, lost/cancelled is at risk. */
+  direction: "won" | "saved" | "lost" | "at_risk" | null;
+}
+
+export interface QualityReport {
+  needsReview: boolean;
+  reasons: string[];
+  evidenceChecked: number;
+  evidenceVerified: number;
+  transcriptConfidence: number;
+}
+
+type Located<T> = Omit<T, "evidence"> & { evidence: Evidence };
+type LocatedNullable<T> = Omit<T, "evidence"> & { evidence: Evidence | null };
+
+export interface CallAnalysis {
+  promptVersion: string;
+  model: string;
