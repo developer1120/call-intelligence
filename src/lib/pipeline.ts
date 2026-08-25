@@ -214,3 +214,58 @@ async function saveAnalysis(id: string, analysis: CallAnalysis) {
     grade: analysis.scorecard?.grade ?? null,
     outcome: analysis.outcome.result,
     needsReview: analysis.quality.needsReview,
+    data: analysis,
+    inputTokens: analysis.usage.inputTokens,
+    outputTokens: analysis.usage.outputTokens,
+    durationMs: analysis.usage.durationMs,
+  });
+  await db
+    .update(calls)
+    .set({
+      status: "complete",
+      error: null,
+      repId,
+      direction: analysis.direction,
+      processedAt: new Date(),
+      stageStartedAt: null,
+    })
+    .where(eq(calls.id, id));
+}
+
+async function upsertRep(name: string, callType: CallType) {
+  const db = await getDb();
+  const clean = name.trim().split(/\s+/)[0];
+  const display = clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+  const id = display.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const role = callType === "new_customer" ? "sales" : "office";
+  await db.insert(reps).values({ id, name: display, role }).onConflictDoNothing();
+  return id;
+}
+
+// ---- background queue -------------------------------------------------------------
+
+type QueueState = { running: number; waiting: (() => void)[] };
+const g = globalThis as unknown as { __pestlaunchQueue?: QueueState };
+const queue = (g.__pestlaunchQueue ??= { running: 0, waiting: [] });
+const CONCURRENCY = 3;
+
+/**
+ * Process calls in the background, a few at a time so a bulk upload doesn't hit rate limits.
+ * Returns a promise that settles when this call is done (used with `after()` on serverless).
+ */
+export function enqueue(id: string, opts?: { retranscribe?: boolean }): Promise<void> {
+  return new Promise((resolve) => {
+    const run = async () => {
+      queue.running++;
+      try {
+        await processCall(id, opts);
+      } finally {
+        queue.running--;
+        resolve();
+        queue.waiting.shift()?.();
+      }
+    };
+    if (queue.running < CONCURRENCY) void run();
+    else queue.waiting.push(() => void run());
+  });
+}

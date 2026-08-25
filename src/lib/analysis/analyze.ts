@@ -118,3 +118,64 @@ export function assemble(
           status = "missed";
           creditNote = "This step was required on this call.";
         } else {
+          credited = true;
+          creditNote = rubric.creditWhenNotNeeded;
+        }
+      } else if (status === "met") {
+        const verified = evidence.filter((e) => e.verified);
+        if (verified.length === 0) {
+          creditNote = "Marked as done, but the quoted line could not be found in the transcript, so the point is withheld until a manager confirms.";
+          reasons.push(`“${rubric.label}” evidence could not be verified`);
+        } else {
+          credited = true;
+          if (!verified.some((e) => e.role === "rep")) {
+            reasons.push(`“${rubric.label}” evidence is attributed to the customer (possible speaker mix-up)`);
+          }
+        }
+      }
+
+      const override = overrides.items?.[rubric.id];
+      const overridden = override !== undefined && override !== credited;
+      if (override !== undefined) {
+        credited = override;
+        if (overridden) creditNote = "Adjusted by a manager.";
+      }
+
+      return {
+        id: rubric.id,
+        quadrant: rubric.quadrant,
+        label: rubric.label,
+        standard: rubric.standard,
+        example: rubric.example,
+        status,
+        credited,
+        creditNote,
+        reasoning: j.reasoning,
+        evidence,
+        overridden,
+      };
+    });
+    const score = items.filter((i) => i.credited).length;
+    scorecard = {
+      id: card.id,
+      name: card.name,
+      source: card.source,
+      items,
+      score,
+      max: card.items.length,
+      grade: gradeFor(card, score),
+      bands: card.bands,
+    };
+  }
+
+  const coaching = scoring
+    ? {
+        headline: scoring.coaching.headline,
+        strengths: scoring.coaching.strengths.map((s) => ({ ...s, evidence: v.locateMaybe(s.evidence) })),
+        improvements: scoring.coaching.improvements.map((s) => ({ ...s, evidence: v.locateMaybe(s.evidence) })),
+      }
+    : null;
+
+  const objections = triage.objections.map((o) => ({ ...o, evidence: v.locate(o.evidence) }));
+  const followUps = triage.followUps.map((f) => ({ ...f, evidence: v.locate(f.evidence) }));
+  const opportunities = triage.opportunities.map((o) => ({ ...o, evidence: v.locateMaybe(o.evidence) }));

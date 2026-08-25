@@ -45,3 +45,26 @@ export async function completedCalls() {
   return all.filter((c): c is CallListItem & { analysis: CallAnalysis } => c.analysis !== null);
 }
 
+export interface CallDetail extends CallListItem {
+  transcript: Transcript | null;
+  tasks: TaskRow[];
+  overrideCount: number;
+  previousCount: number;
+}
+
+export async function getCall(id: string): Promise<CallDetail | null> {
+  const db = await getDb();
+  const [row] = await db
+    .select({ call: calls, rep: reps })
+    .from(calls)
+    .leftJoin(reps, eq(calls.repId, reps.id))
+    .where(eq(calls.id, id));
+  if (!row) return null;
+  const [allAnalyses, [t], callTasks, ov] = await Promise.all([
+    db.select().from(analyses).where(eq(analyses.callId, id)).orderBy(desc(analyses.createdAt)),
+    db.select().from(transcripts).where(eq(transcripts.callId, id)),
+    db.select().from(tasks).where(eq(tasks.callId, id)).orderBy(desc(tasks.createdAt)),
+    db.select().from(overrides).where(eq(overrides.callId, id)),
+  ]);
+  const currentRow = allAnalyses.find((a) => a.isCurrent);
+  return {
