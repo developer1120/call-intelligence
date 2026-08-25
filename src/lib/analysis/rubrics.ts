@@ -150,3 +150,79 @@ const finalInfoSales: RubricItem = {
   standard:
     "Position the company as the one-stop shop for ALL pest needs (termites, rodents, mosquitoes…) AND mention the referral program.",
   example:
+    "We are a one-stop shop for all pest control needs… Also, we have an amazing referral program. If someone you refer signs up, you will get your next month FREE.",
+};
+
+const objectionNote =
+  "Customer raised no objection. Per the Sales Manual the rep automatically earns the 4 objection points.";
+
+export const SCORECARDS: Record<ScorecardId, Scorecard> = {
+  sales: {
+    id: "sales",
+    name: "Sales Call Scorecard",
+    source: "Sales Call Manual",
+    bands: { gold: 17, green: 14 },
+    items: [
+      validate,
+      confidence,
+      expectation1,
+      investigate,
+      summary,
+      expectation2,
+      presentSolution,
+      consensus,
+      {
+        ...close,
+        standard:
+          "Ask for the commitment: propose a specific appointment (\"I can get him out Thursday between 1 and 4, does that work?\") and get a yes. The manual's option close (\"which works better, morning or afternoon?\") is the gold standard; an open \"do you want to go ahead?\" or letting the customer decide later without asking does not count.",
+      },
+      {
+        id: "pricing",
+        quadrant: "Solve",
+        label: "Pricing",
+        standard:
+          "Present price the manual's way: anchor price first, then the sales price / special (anchor minus discount), then the recurring price and frequency. Price given before value was built, or price with no anchor, does not earn the point.",
+        example:
+          "That initial inside and outside service is usually $299 for a home your size. But we're doing a special this week… so it's just going to be $199 for the initial treatment, and then just $49 per month after that.",
+      },
+      {
+        id: "obj_agree",
+        quadrant: "Overcome Objections",
+        label: "Agree",
+        standard: "When an objection comes up, first agree with the customer's point of view; no tension or debate.",
+        example: "Yes, I totally understand. There are lots of great companies out there, and I think it's smart to consider your options first.",
+        creditWhenNotNeeded: objectionNote,
+      },
+      {
+        id: "obj_restate",
+        quadrant: "Overcome Objections",
+        label: "Restate & insinuate",
+        standard: "Restate the objection in your own words and insinuate a possible reason, to isolate the real concern.",
+        example: "If I'm understanding you right, you just want to make sure you're getting the most comprehensive service possible?",
+        creditWhenNotNeeded: objectionNote,
+      },
+      {
+        id: "obj_resolve",
+        quadrant: "Overcome Objections",
+        label: "Resolve",
+        standard: "Resolve the concern: address it, give a solution, and build more value.",
+        example: "The biggest reason people use us is because we do a FULL property treatment every time…",
+        creditWhenNotNeeded: objectionNote,
+      },
+      {
+        id: "obj_reclose",
+        quadrant: "Overcome Objections",
+        label: "Re-close",
+        standard: "Confidently go back in with another low-pressure close after resolving the objection.",
+        example: "Would you prefer to be home for the service, or does any time of day work for you?",
+        creditWhenNotNeeded: objectionNote,
+      },
+      conclusion,
+      finalInfoSales,
+      thank,
+    ],
+  },
+
+  service: {
+    id: "service",
+    name: "Call Process Scorecard (All Calls)",
