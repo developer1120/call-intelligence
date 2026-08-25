@@ -18,3 +18,24 @@ export async function repairSpeakers(t: Transcript): Promise<{ transcript: Trans
   const schema = z.object({
     roles: z.array(z.enum(["rep", "customer", "other"])).describe(`Exactly ${t.utterances.length} labels, one per line in order`),
   });
+  const lines = t.utterances.map((u) => `[${u.i} ${clock(u.start)}] ${u.text}`).join("\n");
+  const res = await structuredCall({
+    system: SYSTEM,
+    user: `${t.utterances.length} lines:\n<transcript>\n${lines}\n</transcript>`,
+    schema,
+    maxTokens: 8000,
+  });
+  const roles = res.data.roles;
+  const speakerFor = { rep: 0, customer: 1, other: 2 } as const;
+  const utterances = t.utterances.map((u, i) => ({ ...u, speaker: speakerFor[roles[i] ?? "customer"] }));
+  return {
+    transcript: {
+      ...t,
+      utterances,
+      speakers: [...new Set(utterances.map((u) => u.speaker))].sort(),
+      speakerSource: "ai",
+    },
+    usage: res.usage,
+    model: res.model,
+  };
+}
