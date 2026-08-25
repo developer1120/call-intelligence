@@ -36,3 +36,42 @@ function triage(overrides: Partial<Triage> = {}): Triage {
     callType: "new_customer",
     callTypeConfidence: "high",
     callTypeReason: "New caller asking for ant service",
+    callTypeEvidence: [{ u: 1, quote: "I've got ants all over my kitchen counters" }],
+    notScoreableReason: "none",
+    customerStatus: "new_prospect",
+    summary: "Ant problem; booked.",
+    outcome: { result: "booked", headline: "Booked ant service", evidence: [{ u: 4, quote: "let's do it" }] },
+    details: {
+      pests: ["ants"],
+      serviceDiscussed: "General pest",
+      property: null,
+      appointment: null,
+      pricing: { anchorPrice: 299, initialPrice: 199, recurringPrice: 49, recurringFrequency: "monthly", notes: null },
+      cancellationReason: null,
+      saveOffer: null,
+      competitor: null,
+    },
+    objections: [],
+    followUps: [],
+    opportunities: [],
+    risks: [],
+    sentiment: { start: "negative", end: "positive", note: "" },
+    ...overrides,
+  };
+}
+
+function scoring(items: ScoringResult["items"]): ScoringResult {
+  return { items, coaching: { headline: "h", strengths: [], improvements: [] } };
+}
+
+describe("evidence verification", () => {
+  it("accepts exact and lightly mis-punctuated quotes", () => {
+    expect(containment("so sorry to hear about those ants", transcript.utterances[2].text)).toBe(1);
+    expect(containment("Im so sorry to hear about those ants!", transcript.utterances[2].text)).toBeGreaterThanOrEqual(0.8);
+  });
+
+  it("rejects paraphrases and invented lines", () => {
+    expect(containment("I apologize for the insect problem you are experiencing", transcript.utterances[2].text)).toBeLessThan(0.8);
+  });
+
+  it("corrects an off-by-one utterance index and takes timestamps from the transcript", () => {

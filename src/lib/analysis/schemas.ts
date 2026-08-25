@@ -30,3 +30,36 @@ export const TriageSchema = z.object({
   callTypeReason: z.string().describe("One sentence on why this type, citing what was said"),
   callTypeEvidence: z.array(EvidenceSchema),
   notScoreableReason: z.enum(NOT_SCOREABLE_REASONS),
+  customerStatus: z.enum(["new_prospect", "existing_customer", "unknown"]),
+  summary: z.string().describe("2–3 plain sentences: why they called, what happened, how it ended"),
+  outcome: z.object({
+    result: z.enum(OUTCOMES),
+    headline: z.string().describe("Owner-facing one-liner, e.g. 'Booked quarterly plan, first visit Tue 9am'"),
+    evidence: z.array(EvidenceSchema),
+  }),
+  details: z.object({
+    pests: z.array(z.string()),
+    serviceDiscussed: z.string().nullable(),
+    property: z.string().nullable().describe("Home size, location/city, pets, kids, access notes if mentioned"),
+    appointment: z.string().nullable().describe("Date/time booked or changed, as said"),
+    pricing: z.object({
+      anchorPrice: z.number().nullable(),
+      initialPrice: z.number().nullable(),
+      recurringPrice: z.number().nullable(),
+      recurringFrequency: z
+        .enum(["monthly", "bi-monthly", "quarterly", "annual", "one-time"])
+        .nullable()
+        .describe(
+          "How often the customer PAYS recurringPrice (not how often the technician visits): a bi-monthly or quarterly service billed as a monthly subscription is 'monthly'",
+        ),
+      notes: z.string().nullable(),
+    }),
+    cancellationReason: z.string().nullable(),
+    saveOffer: z.string().nullable().describe("What the rep offered to keep a cancelling customer"),
+    competitor: z.string().nullable(),
+  }),
+  objections: z.array(
+    z.object({
+      type: z.enum(["price", "need_to_ask_spouse", "shopping_around", "timing", "trust", "not_needed", "contract", "other"]),
+      summary: z.string(),
+      evidence: EvidenceSchema,
