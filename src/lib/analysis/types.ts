@@ -79,3 +79,30 @@ type LocatedNullable<T> = Omit<T, "evidence"> & { evidence: Evidence | null };
 export interface CallAnalysis {
   promptVersion: string;
   model: string;
+  callType: CallType;
+  callTypeConfidence: "high" | "medium" | "low";
+  callTypeReason: string;
+  callTypeEvidence: Evidence[];
+  notScoreableReason: Triage["notScoreableReason"];
+  speakers: Triage["speakers"];
+  repName: string | null;
+  customerName: string | null;
+  companyName: string | null;
+  direction: Triage["direction"];
+  customerStatus: Triage["customerStatus"];
+  summary: string;
+  outcome: { result: Outcome; headline: string; evidence: Evidence[] };
+  details: Triage["details"];
+  objections: Located<Triage["objections"][number]>[];
+  followUps: Located<Triage["followUps"][number]>[];
+  opportunities: LocatedNullable<Triage["opportunities"][number]>[];
+  risks: Located<Triage["risks"][number]>[];
+  sentiment: Triage["sentiment"];
+  scorecard: ScorecardResult | null;
+  coaching: Coaching | null;
+  money: Money;
+  quality: QualityReport;
+  usage: { inputTokens: number; outputTokens: number; durationMs: number };
+  /** The model's raw structured output, kept for audit and for re-scoring without re-running triage. */
+  raw: { triage: Triage; scoring: ScoringResult | null };
+}

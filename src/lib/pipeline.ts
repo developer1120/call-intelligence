@@ -160,3 +160,57 @@ export async function rescoreCall(id: string) {
     scoring: sameType ? current.data.raw.scoring : undefined,
   });
   // Keep the original model + usage figures when nothing was re-generated.
+  if (!analysis.model) {
+    analysis.model = current.data.model;
+    analysis.usage = current.data.usage;
+  }
+  await saveAnalysis(id, analysis);
+}
+
+/**
+ * Register a call that was already transcribed and analyzed by the same engine offline
+ * (`npm run transcribe` + `npm run analyze`), so seeding the demo doesn't pay for it twice.
+ */
+export async function importAnalyzedCall(
+  input: { filename: string; transcript: Transcript; analysis: CallAnalysis } & (
+    | { data: Buffer }
+    | { stored: { key: string; bytes: number } }
+  ),
+) {
+  const db = await getDb();
+  const id = await createCall(
+    "data" in input
+      ? { filename: input.filename, data: input.data }
+      : { filename: input.filename, storedKey: input.stored.key, bytes: input.stored.bytes },
+  );
+  await db.insert(transcripts).values({
+    callId: id,
+    provider: input.transcript.provider,
+    model: input.transcript.model,
+    data: input.transcript,
+  });
+  await db
+    .update(calls)
+    .set({ durationSec: input.transcript.durationSec, transcriptSource: "deepgram" })
+    .where(eq(calls.id, id));
+  await saveAnalysis(id, input.analysis);
+  return id;
+}
+
+async function saveAnalysis(id: string, analysis: CallAnalysis) {
+  const db = await getDb();
+  const repId = analysis.repName ? await upsertRep(analysis.repName, analysis.callType) : null;
+  await db.update(analyses).set({ isCurrent: false }).where(eq(analyses.callId, id));
+  await db.insert(analyses).values({
+    id: newId(),
+    callId: id,
+    isCurrent: true,
+    model: analysis.model,
+    promptVersion: analysis.promptVersion,
+    callType: analysis.callType,
+    scorecardId: analysis.scorecard?.id ?? null,
+    score: analysis.scorecard?.score ?? null,
+    maxScore: analysis.scorecard?.max ?? null,
+    grade: analysis.scorecard?.grade ?? null,
+    outcome: analysis.outcome.result,
+    needsReview: analysis.quality.needsReview,
