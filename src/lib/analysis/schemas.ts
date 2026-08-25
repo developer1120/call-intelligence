@@ -63,3 +63,36 @@ export const TriageSchema = z.object({
       type: z.enum(["price", "need_to_ask_spouse", "shopping_around", "timing", "trust", "not_needed", "contract", "other"]),
       summary: z.string(),
       evidence: EvidenceSchema,
+      handling: z.enum(["resolved", "partially", "not_addressed"]),
+    }),
+  ).describe("Only real objections/concerns raised by the CUSTOMER that pushed back on buying or staying. Questions are not objections."),
+  followUps: z.array(
+    z.object({
+      owner: z.enum(["company", "customer"]),
+      action: z.string(),
+      due: z.string().nullable(),
+      evidence: EvidenceSchema,
+    }),
+  ).describe("Concrete commitments made on the call that someone must act on after it"),
+  opportunities: z.array(
+    z.object({
+      type: z.enum(["upsell", "cross_sell", "referral", "review", "booking", "save", "prepay"]),
+      description: z.string(),
+      captured: z.boolean(),
+      evidence: EvidenceSchema.nullable(),
+    }),
+  ).describe("Revenue/relationship opportunities present on this call and whether the rep captured them"),
+  risks: z.array(
+    z.object({
+      type: z.enum([
+        "churn",
+        "complaint",
+        "technician_issue",
+        "billing_dispute",
+        "damage_claim",
+        "safety_concern",
+        "bad_review_threat",
+        "escalation",
+      ]),
+      severity: Confidence,
+      description: z.string(),
