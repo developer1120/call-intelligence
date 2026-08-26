@@ -96,3 +96,36 @@ export const TriageSchema = z.object({
       ]),
       severity: Confidence,
       description: z.string(),
+      evidence: EvidenceSchema,
+    }),
+  ),
+  sentiment: z.object({
+    start: z.enum(["positive", "neutral", "negative"]),
+    end: z.enum(["positive", "neutral", "negative"]),
+    note: z.string(),
+  }),
+});
+export type Triage = z.infer<typeof TriageSchema>;
+
+const ItemJudgement = z.object({
+  status: z.enum(["met", "missed"]),
+  reasoning: z.string().describe("1–2 sentences, specific to this call"),
+  evidence: z
+    .array(EvidenceSchema)
+    .describe("met: the rep's line(s) that satisfy the standard. missed: the moment it should have happened, if any"),
+});
+
+const ItemJudgementWithNotNeeded = ItemJudgement.extend({
+  status: z.enum(["met", "missed", "not_needed"]),
+});
+
+export function scoringSchemaFor(id: ScorecardId) {
+  const card = SCORECARDS[id];
+  const shape: Record<string, typeof ItemJudgement | typeof ItemJudgementWithNotNeeded> = {};
+  for (const item of card.items) {
+    shape[item.id] = item.creditWhenNotNeeded ? ItemJudgementWithNotNeeded : ItemJudgement;
+  }
+  const itemIds = card.items.map((i) => i.id) as [string, ...string[]];
+  return z.object({
+    items: z.object(shape),
+    coaching: z.object({

@@ -76,3 +76,29 @@ export function buildBrief(calls: AnalyzedCall[], insights: Insight[]): BriefLin
     });
   }
 
+  const promises = insights.filter((i) => i.kind === "promise" && i.priority !== "low" && !i.task);
+  const risks = insights.filter((i) => i.kind === "risk" && i.priority === "high" && !i.task);
+  if (promises.length || risks.length) {
+    lines.push({
+      tone: risks.length ? "bad" : "neutral",
+      text: [
+        promises.length ? `${promises.length} promised follow-up${promises.length > 1 ? "s" : ""} not yet assigned` : null,
+        risks.length ? `${risks.length} high-risk call${risks.length > 1 ? "s" : ""} need a manager` : null,
+      ]
+        .filter(Boolean)
+        .join(" and ")
+        .concat("."),
+    });
+  }
+
+  const team = buildTeam(calls).filter((r) => r.graded >= 2 && r.avgPct !== null);
+  if (team.length >= 2) {
+    const top = team[0];
+    lines.push({
+      tone: "good",
+      text: `${top.name} leads the team at ${Math.round(top.avgPct! * 100)}% of steps hit across ${top.graded} graded calls.`,
+      href: `/team/${top.id}`,
+    });
+  }
+  return lines.slice(0, 4);
+}
