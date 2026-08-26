@@ -28,3 +28,33 @@ function lcs(a: string[], b: string[]): number {
   return prev[b.length];
 }
 
+/**
+ * How well `quote` is contained in `text`, from 0 to 1. Uses an in-order word match,
+ * so small transcription/punctuation differences don't fail a genuine quote, but a
+ * paraphrase or invented line does.
+ */
+export function containment(quote: string, text: string): number {
+  const q = normalizeWords(quote);
+  if (!q.length) return 0;
+  const t = normalizeWords(text);
+  return lcs(q, t) / q.length;
+}
+
+export class EvidenceVerifier {
+  private roleBySpeaker: Map<number, SpeakerRole>;
+  checked = 0;
+  verified = 0;
+
+  constructor(
+    private transcript: Transcript,
+    speakers: { speaker: number; role: SpeakerRole }[],
+  ) {
+    this.roleBySpeaker = new Map(speakers.map((s) => [s.speaker, s.role]));
+  }
+
+  roleOf(u: number): SpeakerRole {
+    const utt = this.transcript.utterances[u];
+    return utt ? (this.roleBySpeaker.get(utt.speaker) ?? "other") : "other";
+  }
+
+  /**
