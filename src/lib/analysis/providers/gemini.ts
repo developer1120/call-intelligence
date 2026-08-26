@@ -35,3 +35,40 @@ let thinkingSupported = true;
 
 /**
  * Request pacing. Free-tier keys allow only a few requests per minute per model, so requests
+ * are spaced by 60s / GEMINI_RPM (default 5). Paid keys can raise GEMINI_RPM.
+ */
+const g = globalThis as unknown as { __geminiNext?: number };
+async function pace() {
+  const rpm = Math.max(1, Number(process.env.GEMINI_RPM ?? 5));
+  const interval = Math.ceil(60_000 / rpm) + 250;
+  const now = Date.now();
+  const at = Math.max(now, g.__geminiNext ?? 0);
+  g.__geminiNext = at + interval;
+  if (at > now) await sleep(at - now);
+}
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Seconds Google asks us to wait, from "Please retry in 49.01s" in a 429. */
+function retryAfterMs(message: string): number | null {
+  const m = /retry in ([\d.]+)s/i.exec(message);
+  return m ? Math.ceil(Number(m[1]) * 1000) + 1000 : null;
+}
+
+/**
+ * One Gemini structured-output request. Gemini constrains output to the JSON schema; we
+ * still parse it with the same Zod schema so both providers are held to one contract.
+ */
+export async function geminiStructured<S extends z.ZodType>(req: StructuredRequest<S>): Promise<StructuredResult<z.infer<S>>> {
+  const started = Date.now();
+  const models = geminiModels();
+  let modelIndex = 0;
+  let overloadedTries = 0;
+  const baseConfig: GenerateContentConfig = {
+    systemInstruction: req.system,
+    responseMimeType: "application/json",
+    responseJsonSchema: toGeminiSchema(req.schema),
+    maxOutputTokens: req.maxTokens ?? 32000,
+  };
+
+  let lastError: unknown;
+  const MAX_ATTEMPTS = 8;
