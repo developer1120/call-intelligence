@@ -237,3 +237,83 @@ export function buildInsights(calls: AnalyzedCall[], tasks: TaskRow[]): Insight[
         PRIORITY_RANK[x.priority] - PRIORITY_RANK[y.priority] ||
         (y.value ?? 0) - (x.value ?? 0),
     );
+}
+
+// ---- team ------------------------------------------------------------------------
+
+export interface RepStats {
+  id: string;
+  name: string;
+  role: string;
+  calls: number;
+  graded: number;
+  avgPct: number | null;
+  grades: { gold: number; green: number; below: number };
+  sales: { calls: number; booked: number };
+  retention: { calls: number; saved: number };
+  missed: { itemId: string; label: string; missed: number; of: number }[];
+  strengths: { itemId: string; label: string; met: number; of: number }[];
+  /** Score % of each graded call, oldest first. */
+  history: { callId: string; label: string; pct: number }[];
+  coachingLines: { itemId: string | null; tryThis: string; title: string; callId: string; callLabel: string }[];
+}
+
+export function pct(c: CallAnalysis) {
+  return c.scorecard ? c.scorecard.score / c.scorecard.max : null;
+}
+
+export function buildTeam(calls: AnalyzedCall[]): RepStats[] {
+  const byRep = new Map<string, AnalyzedCall[]>();
+  for (const c of calls) {
+    const id = c.rep?.id ?? "unidentified";
+    byRep.set(id, [...(byRep.get(id) ?? []), c]);
+  }
+  const reps: RepStats[] = [];
+  for (const [id, list] of byRep) {
+    const ordered = [...list].sort((a, b) => a.call.label.localeCompare(b.call.label));
+    const graded = ordered.filter((c) => c.analysis.scorecard);
+    const items = new Map<string, { label: string; met: number; of: number }>();
+    for (const c of graded) {
+      for (const it of c.analysis.scorecard!.items) {
+        if (it.status === "not_needed") continue;
+        const s = items.get(it.id) ?? { label: it.label, met: 0, of: 0 };
+        s.of++;
+        if (it.credited) s.met++;
+        items.set(it.id, s);
+      }
+    }
+    const entries = [...items.entries()];
+    const first = ordered[0];
+    reps.push({
+      id,
+      name: first.rep?.name ?? "Unidentified",
+      role: first.rep?.role ?? "office",
+      calls: ordered.length,
+      graded: graded.length,
+      avgPct: graded.length ? graded.reduce((s, c) => s + pct(c.analysis)!, 0) / graded.length : null,
+      grades: {
+        gold: graded.filter((c) => c.analysis.scorecard!.grade === "gold").length,
+        green: graded.filter((c) => c.analysis.scorecard!.grade === "green").length,
+        below: graded.filter((c) => c.analysis.scorecard!.grade === "below").length,
+      },
+      sales: {
+        calls: ordered.filter((c) => c.analysis.callType === "new_customer").length,
+        booked: ordered.filter((c) => c.analysis.callType === "new_customer" && c.analysis.outcome.result === "booked").length,
+      },
+      retention: {
+        calls: ordered.filter((c) => c.analysis.callType === "retention").length,
+        saved: ordered.filter((c) => c.analysis.callType === "retention" && c.analysis.outcome.result === "saved").length,
+      },
+      missed: entries
+        .map(([itemId, s]) => ({ itemId, label: s.label, missed: s.of - s.met, of: s.of }))
+        .filter((s) => s.missed > 0)
+        .sort((a, b) => b.missed / b.of - a.missed / a.of || b.missed - a.missed),
+      strengths: entries
+        .map(([itemId, s]) => ({ itemId, label: s.label, met: s.met, of: s.of }))
+        .filter((s) => s.met === s.of && s.of >= 2)
+        .sort((a, b) => b.of - a.of),
+      history: graded.map((c) => ({ callId: c.call.id, label: c.call.label, pct: pct(c.analysis)! })),
+      coachingLines: ordered
+        .slice()
+        .reverse()
+        .flatMap((c) =>
