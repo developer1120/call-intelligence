@@ -68,3 +68,27 @@ export async function getCall(id: string): Promise<CallDetail | null> {
   ]);
   const currentRow = allAnalyses.find((a) => a.isCurrent);
   return {
+    call: row.call,
+    rep: row.rep,
+    analysis: current(currentRow?.data),
+    stalled: isStalled(row.call),
+    transcript: t?.data ?? null,
+    tasks: callTasks,
+    overrideCount: ov.length,
+    previousCount: allAnalyses.length - (currentRow ? 1 : 0),
+  };
+}
+
+export async function listTasks() {
+  const db = await getDb();
+  return db
+    .select({ task: tasks, callLabel: calls.label })
+    .from(tasks)
+    .leftJoin(calls, eq(tasks.callId, calls.id))
+    .orderBy(desc(tasks.createdAt));
+}
+
+export async function listReps() {
+  const db = await getDb();
+  return db.select().from(reps);
+}
