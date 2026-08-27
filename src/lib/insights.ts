@@ -317,3 +317,83 @@ export function buildTeam(calls: AnalyzedCall[]): RepStats[] {
         .slice()
         .reverse()
         .flatMap((c) =>
+          (c.analysis.coaching?.improvements ?? []).map((i) => ({
+            itemId: i.itemId,
+            tryThis: i.tryThis,
+            title: i.title,
+            callId: c.call.id,
+            callLabel: c.call.label,
+          })),
+        ),
+    });
+  }
+  return reps.sort((a, b) => (b.avgPct ?? -1) - (a.avgPct ?? -1) || b.calls - a.calls);
+}
+
+// ---- where calls break down ------------------------------------------------------
+
+export interface StepRate {
+  itemId: string;
+  label: string;
+  quadrant: Quadrant;
+  met: number;
+  of: number;
+}
+
+export function stepRates(calls: AnalyzedCall[], scorecard: ScorecardId): StepRate[] {
+  const card = SCORECARDS[scorecard];
+  return card.items.map((item) => {
+    let met = 0;
+    let of = 0;
+    for (const c of calls) {
+      const sc = c.analysis.scorecard;
+      if (sc?.id !== scorecard) continue;
+      const it = sc.items.find((i) => i.id === item.id);
+      if (!it || it.status === "not_needed") continue;
+      of++;
+      if (it.credited) met++;
+    }
+    return { itemId: item.id, label: item.label, quadrant: item.quadrant, met, of };
+  });
+}
+
+// ---- headline numbers ------------------------------------------------------------
+
+export function overviewStats(calls: AnalyzedCall[]) {
+  const graded = calls.filter((c) => c.analysis.scorecard);
+  const sales = calls.filter((c) => c.analysis.callType === "new_customer");
+  const retention = calls.filter((c) => c.analysis.callType === "retention");
+  const sum = (list: AnalyzedCall[], dir: string) =>
+    list.filter((c) => c.analysis.money.direction === dir).reduce((s, c) => s + (c.analysis.money.annualValue ?? 0), 0);
+  return {
+    calls: calls.length,
+    talkSeconds: calls.reduce((s, c) => s + (c.call.durationSec ?? 0), 0),
+    graded: graded.length,
+    avgPct: graded.length ? graded.reduce((s, c) => s + pct(c.analysis)!, 0) / graded.length : null,
+    grades: {
+      gold: graded.filter((c) => c.analysis.scorecard!.grade === "gold").length,
+      green: graded.filter((c) => c.analysis.scorecard!.grade === "green").length,
+      below: graded.filter((c) => c.analysis.scorecard!.grade === "below").length,
+    },
+    sales: { calls: sales.length, booked: sales.filter((c) => c.analysis.outcome.result === "booked").length },
+    retention: { calls: retention.length, saved: retention.filter((c) => c.analysis.outcome.result === "saved").length },
+    revenue: {
+      won: sum(calls, "won"),
+      saved: sum(calls, "saved"),
+      lost: sum(calls, "lost"),
+      atRisk: sum(calls, "at_risk"),
+      anyEstimated: calls.some((c) => c.analysis.money.basis === "estimated"),
+    },
+    types: Object.entries(
+      calls.reduce<Record<string, number>>((m, c) => ((m[c.analysis.callType] = (m[c.analysis.callType] ?? 0) + 1), m), {}),
+    ).sort((a, b) => b[1] - a[1]),
+    needsReview: calls.filter((c) => c.analysis.quality.needsReview).length,
+  };
+}
+
+function lower(s: string) {
+  return s.charAt(0).toLowerCase() + s.slice(1).replace(/\.$/, "");
+}
+function cap(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}

@@ -75,3 +75,41 @@ describe("evidence verification", () => {
   });
 
   it("corrects an off-by-one utterance index and takes timestamps from the transcript", () => {
+    const v = new EvidenceVerifier(transcript, speakers);
+    const e = v.locate({ u: 3, quote: "I can definitely take care of that for you" });
+    expect(e).toMatchObject({ u: 2, start: 10, role: "rep", verified: true });
+  });
+
+  it("searches the whole call when the index is wrong", () => {
+    const v = new EvidenceVerifier(transcript, speakers);
+    expect(v.locate({ u: 0, quote: "let's do it" })).toMatchObject({ u: 4, verified: true, role: "customer" });
+  });
+
+  it("matches a quote the transcriber split across several lines", () => {
+    const split: Transcript = {
+      ...transcript,
+      utterances: [
+        { i: 0, speaker: 0, start: 0, end: 1, text: "And then", confidence: 1 },
+        { i: 1, speaker: 0, start: 1, end: 2, text: "where have you seen", confidence: 1 },
+        { i: 2, speaker: 0, start: 2, end: 3, text: "the where have you seen the activity?", confidence: 1 },
+        { i: 3, speaker: 1, start: 3, end: 6, text: "In the living room on the carpet.", confidence: 1 },
+      ],
+    };
+    const v = new EvidenceVerifier(split, speakers);
+    expect(v.locate({ u: 2, quote: "where have you seen the where have you seen the activity?" })).toMatchObject({ u: 1, start: 1, verified: true });
+  });
+
+  it("flags quotes that are not in the call", () => {
+    const v = new EvidenceVerifier(transcript, speakers);
+    expect(v.locate({ u: 2, quote: "we also have a great referral program" }).verified).toBe(false);
+    expect(v.verified).toBe(0);
+  });
+});
+
+describe("scoring rules", () => {
+  const card = SCORECARDS.sales;
+  const allMet: ScoringResult["items"] = Object.fromEntries(
+    card.items.map((i) => [i.id, { status: "met" as const, reasoning: "ok", evidence: [{ u: 2, quote: "I can definitely take care of that for you" }] }]),
+  );
+
+  it("grade bands match the manuals", () => {
