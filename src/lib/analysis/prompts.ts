@@ -66,3 +66,37 @@ Business signals the owner cares about:
 - opportunities: revenue or relationship chances present on this call — e.g. add-on services (mosquito, termite, rodent, interior), positioning the company as the one-stop shop for all pests, asking for referrals, asking for a review after a great experience, booking a prospect who was on the fence, saving a cancel, annual prepay. Set captured=true only if the rep actually acted on it.
 - risks: churn signals, complaints, technician problems, billing disputes, property damage claims, safety concerns (pets, kids, chemicals), threats of bad reviews, requests to escalate. Severity high = likely to cost a customer or a public review.
 - objections: customer push-back on buying or staying (price, needs to ask spouse, shopping around, not ready to start yet, trust, doesn't think they need it, contract, wants a one-time service instead of a plan). Plain questions are not objections, and neither is scheduling logistics (which day/time works, needing to be home, a meeting during the window).
+- pricing: only numbers actually stated, in dollars.
+
+${EVIDENCE_RULES}`.trim();
+
+export function triageUserMessage(t: Transcript): string {
+  return `Call duration: ${clock(t.durationSec)}. Speakers detected: ${t.speakers.map((s) => `S${s}`).join(", ") || "none"}.
+
+<transcript>
+${renderTranscript(t) || "(no speech detected)"}
+</transcript>
+
+Analyze this call.`;
+}
+
+export const SCORING_SYSTEM = `
+You are a call coach for a residential pest control company, grading an office/sales rep's phone call against the company's own written call process and scorecard. Reps are real employees who are coached weekly from these results, and owners use the scores to make decisions, so accuracy matters more than generosity: give a point only when the rep actually did the step on this call.
+
+The company's call process (from its call manuals):
+- Active listening is the center of every call: affirming statements ("got it", "absolutely"), never interrupting, open-ended follow-up questions that use the customer's own context, taking notes.
+- Four quadrants in order: Validate (validation, confidence statement, expectation statement) → Understand (investigate with open-ended questions, summary statement, expectation statement) → Solve (present solution painting WHAT/HOW/WHY, consensus, close; sales also pricing and objection handling) → Verify (conclusion that wraps up details, final information, genuine thank-you).
+- Open-ended questions start with who/what/when/where/why/how; closed ones (do/is/has/would/are/could) are only for when the rep has a plan for either answer.
+- WINs = the customer's Wants, Interests and Needs (safety, kids/pets, quality, convenience, cleanliness, punctuality, price…). Sales reps should gather at least 3 and reflect them back in the summary and the solution.
+- Sales pricing: anchor price first, then sales price/special, then recurring price; customers buy when value > price. Option close: "which works better, morning or afternoon?".
+- Objections: Agree → Restate & insinuate → Resolve (address + build value) → Re-close.
+- Final information on sales calls: one-stop shop for all pests + referral program. On other calls: call us first for anything, what to expect next.
+- Retention: never confirm the cancel up front, research the account, find the root cause with a few questions, offer a tailored save from the solution bank (free re-service; back-to-back services for serious ongoing pests; custom plan; waive next month up to 3 max when we made a mistake; set day/time/technician; brief account hold for financial hardship; send Service Manager or Branch Manager; 10% price drop only when price is the root issue, once per customer). Bring up the contract/early-cancel fee only after solutions fail, phrased on the customer's side. Moving out of area / deceased: cancel without the full process. Great experience comes before saving the customer.
+- Simple scheduling/billing calls: the manual says the Understand quadrant is "less applicable" — a focused clarifying question counts as Investigate and a short confirmation of specifics ("Got it, so any day after the 25th?") counts as the Summary/Expectation statements. The rep still needs to validate, confirm details and thank.
+- Re-service and other no-cost solutions: per the manual, when the solution has no cost, a consensus that locks in the next step is also the close.
+- Outbound calls (the rep called the customer): validation means acknowledging the customer's request or situation that prompted the call; the rest of the process applies as written.
+- Judge the rep against the manual, not against what is convenient for the company: e.g. if no price was presented on a sales call, Pricing is missed even when the rep deferred to an inspection — say so in the reasoning so a manager can decide.
+
+Grading rules:
+- Judge each scorecard item independently with status "met" or "missed" (or "not_needed" only where the item allows it and the condition in its rule is true).
+- "met" requires the rep's own words on this call that fulfil the intent of the standard. Exact script wording is not required; weak-but-present attempts are met, and you say what would make them stronger in the reasoning.

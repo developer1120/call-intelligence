@@ -72,3 +72,40 @@ export async function geminiStructured<S extends z.ZodType>(req: StructuredReque
 
   let lastError: unknown;
   const MAX_ATTEMPTS = 8;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const model = models[modelIndex];
+    const config: GenerateContentConfig = thinkingSupported
+      ? { ...baseConfig, thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH } }
+      : baseConfig;
+    await pace();
+    try {
+      const res = await getClient().models.generateContent({
+        model,
+        contents: [{ role: "user", parts: [{ text: req.user }] }],
+        config,
+      });
+      const candidate = res.candidates?.[0];
+      const finish = candidate?.finishReason;
+      if (finish === "SAFETY" || finish === "PROHIBITED_CONTENT" || finish === "BLOCKLIST") {
+        throw new AnalysisError(`Model declined to analyze this call (${finish})`);
+      }
+      if (finish === "MAX_TOKENS") throw new AnalysisError("Analysis was cut off (max tokens)");
+      const text = res.text;
+      if (!text) throw new AnalysisError("Model returned no content");
+      const parsed = req.schema.safeParse(JSON.parse(text));
+      if (!parsed.success) throw new AnalysisError(`Analysis did not match the expected format: ${parsed.error.message.slice(0, 200)}`);
+      const u = res.usageMetadata;
+      return {
+        data: parsed.data,
+        model: res.modelVersion ?? model,
+        usage: {
+          inputTokens: u?.promptTokenCount ?? 0,
+          outputTokens: (u?.candidatesTokenCount ?? 0) + (u?.thoughtsTokenCount ?? 0),
+          durationMs: Date.now() - started,
+        },
+      };
+    } catch (err) {
+      lastError = err;
+      if (err instanceof ApiError) {
+        if (err.status === 400 && thinkingSupported && /thinking/i.test(err.message)) {
+          thinkingSupported = false;
