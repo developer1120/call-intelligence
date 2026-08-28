@@ -52,3 +52,30 @@ export function scorecardFor(type: CallType): ScorecardId | null {
   switch (type) {
     case "new_customer":
       return "sales";
+    case "retention":
+      return "retention";
+    case "not_scoreable":
+      return null;
+    default:
+      return "service";
+  }
+}
+
+export const OUTCOMES = [
+  "booked",
+  "saved",
+  "resolved",
+  "follow_up",
+  "lost",
+  "cancelled",
+  "unresolved",
+  "no_conversation",
+] as const;
+export type Outcome = (typeof OUTCOMES)[number];
+
+export const OUTCOME_DEFINITIONS: Record<Outcome, string> = {
+  booked: "A prospect bought / scheduled their first service (sales win).",
+  saved: "A customer who wanted to cancel agreed to stay (retention win).",
+  resolved: "The existing customer's request was fully handled on the call (rescheduled, card updated, re-service booked, question answered).",
+  follow_up: "Nothing final yet: a callback, quote, manager follow-up or customer decision is still pending.",
+  lost: "A prospect did not buy and no follow-up was set.",
