@@ -226,3 +226,79 @@ export const SCORECARDS: Record<ScorecardId, Scorecard> = {
   service: {
     id: "service",
     name: "Call Process Scorecard (All Calls)",
+    source: "Office Call Manual",
+    bands: { gold: 12, green: 11 },
+    items: [
+      validate,
+      confidence,
+      expectation1,
+      investigate,
+      summary,
+      expectation2,
+      presentSolution,
+      consensus,
+      close,
+      conclusion,
+      thank,
+      finalInfoService,
+    ],
+  },
+
+  retention: {
+    id: "retention",
+    name: "Retention Call Scorecard",
+    source: "Office Call Manual — Retention Call Process",
+    bands: { gold: 12, green: 11 },
+    items: [
+      {
+        id: "ret_validate_confidence",
+        quadrant: "Validate",
+        label: "Validate & confidence statement",
+        standard:
+          "Validate the customer and assure them you can help, WITHOUT confirming the cancellation (never \"yes, I can cancel that for you\"). Don't bring up the contract yet.",
+        example: "Got it. Thank you for calling in, I can absolutely take a look at things for you.",
+      },
+      {
+        id: "ret_transition",
+        quadrant: "Validate",
+        label: "Transition statement",
+        standard: "Prime the customer for the next step, e.g. ask for the account address and say you'll take a quick look.",
+        example: "What's the address for the account? … Awesome. Let me just take a quick look here.",
+      },
+      {
+        id: "ret_research",
+        quadrant: "Validate",
+        label: "Do your research",
+        standard:
+          "Look into the account and use what you find (tenure, contract status, re-services, last service, past issues). Evidence is the rep referencing account facts.",
+        example: "I see here you've been a customer for over 3 years, thank you!",
+      },
+      {
+        id: "ret_investigate",
+        quadrant: "Understand",
+        label: "Investigate",
+        standard:
+          "Ask a few open-ended questions to find the ROOT reason for cancelling. Helpful, not interrogating; don't offer solutions yet.",
+        example: "If you don't mind, what's the reason you're unhappy with the service?",
+      },
+      {
+        id: "ret_validate_summary",
+        quadrant: "Understand",
+        label: "Validate & summary statement",
+        standard: "Keep validating and repeat back your understanding of the reason to confirm the full scope.",
+        example: "Got it, that makes sense. So overall the service has been pretty good, but just the last couple months you've been noticing more ants than normal?",
+      },
+      {
+        id: "ret_validate_expectation",
+        quadrant: "Understand",
+        label: "Validate & expectation statement",
+        standard: "Stay on their team and prime them for options (\"let me give a couple of suggestions…\").",
+        example:
+          "Since we are a small family-owned company, we truly value you as a customer of ours and I want to make this right for you. Let me give a couple of suggestions…",
+      },
+      {
+        id: "ret_present_solution",
+        quadrant: "Solve",
+        label: "Present solution",
+        standard:
+          "Offer a specific, tailored save solution from the solution bank (free re-service, back-to-back services, custom plan, waive a month, set day/tech, account hold, manager visit, 10% price drop as last resort), building value.",
