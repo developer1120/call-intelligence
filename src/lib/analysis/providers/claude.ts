@@ -27,3 +27,32 @@ export async function claudeStructured<S extends z.ZodType>(req: StructuredReque
         max_tokens: req.maxTokens ?? 32000,
         betas: ["server-side-fallback-2026-07-01"],
         fallbacks: "default",
+        // The system prompt is identical for every call, so it is cached across calls.
+        system: [{ type: "text", text: req.system, cache_control: { type: "ephemeral" } }],
+        messages: [{ role: "user", content: req.user }],
+        output_config: { effort: "high", format: betaZodOutputFormat(req.schema) },
+      });
+      if (res.stop_reason === "refusal") {
+        throw new AnalysisError(`Model declined to analyze this call (${res.stop_details?.category ?? "unknown"})`);
+      }
+      if (res.stop_reason === "max_tokens") throw new AnalysisError("Analysis was cut off (max_tokens)");
+      if (!res.parsed_output) throw new AnalysisError("Analysis did not match the expected format");
+      return {
+        data: res.parsed_output as z.infer<S>,
+        model: res.model,
+        usage: {
+          inputTokens:
+            res.usage.input_tokens + (res.usage.cache_read_input_tokens ?? 0) + (res.usage.cache_creation_input_tokens ?? 0),
+          outputTokens: res.usage.output_tokens,
+          durationMs: Date.now() - started,
+        },
+      };
+    } catch (err) {
+      lastError = err;
+      // Auth / bad request errors won't fix themselves; transient ones are retried by the SDK.
+      if (err instanceof Anthropic.APIError) throw err;
+      if (err instanceof AnalysisError && err.message.startsWith("Model declined")) throw err;
+    }
+  }
+  throw lastError;
+}
