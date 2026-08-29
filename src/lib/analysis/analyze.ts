@@ -179,3 +179,63 @@ export function assemble(
   const objections = triage.objections.map((o) => ({ ...o, evidence: v.locate(o.evidence) }));
   const followUps = triage.followUps.map((f) => ({ ...f, evidence: v.locate(f.evidence) }));
   const opportunities = triage.opportunities.map((o) => ({ ...o, evidence: v.locateMaybe(o.evidence) }));
+  const risks = triage.risks.map((r) => ({ ...r, evidence: v.locate(r.evidence) }));
+
+  if (triage.callTypeConfidence === "low") reasons.push("Call type is uncertain");
+  if (outcomeEvidence.length > 0 && !outcomeEvidence.some((e) => e.verified)) reasons.push("Outcome evidence could not be verified");
+  if (card && !triage.speakers.some((s) => s.role === "rep")) reasons.push("No company rep identified on the call");
+  if (transcript.utterances.length > 0 && transcript.confidence < 0.75) reasons.push("Low audio/transcription quality");
+
+  return {
+    promptVersion: PROMPT_VERSION,
+    model,
+    callType: triage.callType,
+    callTypeConfidence: triage.callTypeConfidence,
+    callTypeReason: triage.callTypeReason,
+    callTypeEvidence,
+    notScoreableReason: triage.notScoreableReason,
+    speakers: triage.speakers,
+    repName: unmasked(triage.repName),
+    customerName: unmasked(triage.customerName),
+    companyName: triage.companyName,
+    direction: triage.direction,
+    customerStatus: triage.customerStatus,
+    summary: triage.summary,
+    outcome: { ...triage.outcome, evidence: outcomeEvidence },
+    details: triage.details,
+    objections,
+    followUps,
+    opportunities,
+    risks,
+    sentiment: triage.sentiment,
+    scorecard,
+    coaching,
+    money: moneyFor(triage),
+    quality: {
+      needsReview: reasons.length > 0,
+      reasons: [...new Set(reasons)],
+      evidenceChecked: v.checked,
+      evidenceVerified: v.verified,
+      transcriptConfidence: transcript.confidence,
+    },
+    usage,
+    raw: { triage, scoring },
+  };
+}
+
+const PERIODS_PER_YEAR = { monthly: 12, "bi-monthly": 6, quarterly: 4, annual: 1, "one-time": 0 } as const;
+
+export function moneyFor(triage: Pick<Triage, "callType" | "outcome" | "details">): Money {
+  const direction = moneyDirection(triage.callType, triage.outcome.result);
+  if (!direction) return { annualValue: null, basis: null, direction: null };
+
+  const p = triage.details.pricing;
+  let quoted: number | null = null;
+  if (p.recurringPrice && p.recurringFrequency) {
+    const recurring = p.recurringPrice * PERIODS_PER_YEAR[p.recurringFrequency];
+    quoted = recurring + (triage.callType === "new_customer" ? (p.initialPrice ?? 0) : 0);
+  } else if (p.initialPrice && triage.callType === "new_customer") {
+    quoted = p.initialPrice;
+  }
+  if (quoted && quoted > 0) return { annualValue: Math.round(quoted), basis: "quoted", direction };
+  return { annualValue: DEFAULT_ANNUAL_VALUE, basis: "estimated", direction };
