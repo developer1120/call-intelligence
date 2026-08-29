@@ -58,3 +58,33 @@ export class EvidenceVerifier {
   }
 
   /**
+   * Resolve a model citation to a real place in the transcript. Checks the cited utterance
+   * and its neighbours first (models are sometimes off by one), then the whole call.
+   */
+  locate(ref: EvidenceRef): Evidence {
+    this.checked++;
+    const utts = this.transcript.utterances;
+    const quote = ref.quote.trim();
+    const quoteWords = normalizeWords(quote).length;
+    let best = { u: -1, score: 0 };
+
+    // Score the quote against utterances [s, e]. Multi-line windows exist because the transcriber
+    // often splits one sentence into fragments; they are capped in size so a long window of common
+    // words can't "contain" an invented quote by accident.
+    const tryWindow = (s: number, e: number) => {
+      if (s < 0 || e >= utts.length) return;
+      const text = utts.slice(s, e + 1).map((x) => x.text).join(" ");
+      if (e > s && normalizeWords(text).length > quoteWords * 3 + 10) return;
+      let score = containment(quote, text);
+      if (score <= best.score) return;
+      // Start the evidence at the first line the quote actually uses.
+      while (s < e && containment(quote, utts.slice(s + 1, e + 1).map((x) => x.text).join(" ")) >= score) s++;
+      score = Math.max(score, containment(quote, utts.slice(s, e + 1).map((x) => x.text).join(" ")));
+      best = { u: s, score };
+    };
+
+    for (let s = ref.u - 2; s <= ref.u + 1; s++) {
+      for (let len = 0; len < 5; len++) tryWindow(s, s + len);
+    }
+    if (best.score < MATCH_THRESHOLD) {
+      // The model cited the wrong line: search the whole call.

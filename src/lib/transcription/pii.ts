@@ -26,3 +26,32 @@ const PLACEHOLDER: Record<string, string> = {
   NAME_MEDICAL_PROFESSIONAL: "[NAME]",
   PHONE_NUMBER: "[PHONE]",
   EMAIL_ADDRESS: "[EMAIL]",
+  LOCATION_ADDRESS: "[ADDRESS]",
+  LOCATION_ADDRESS_STREET: "[ADDRESS]",
+  LOCATION_ZIP: "[ZIP]",
+  USERNAME: "[EMAIL]",
+};
+
+const NAME_LABELS = new Set(["NAME", "NAME_GIVEN", "NAME_FAMILY"]);
+
+/**
+ * Employee names said in a company greeting: "Thank you for calling Bug Bully, this is Griffin",
+ * "Endeavor Pest Management. This is Elijah speaking", "This is Kevin from Bug Bully".
+ */
+export function employeeNames(texts: string[]): Set<string> {
+  const names = new Set<string>();
+  const patterns = [
+    /thank you for calling[^.?!]*?[.,]?\s*this is ([A-Z][a-z]+)/i,
+    /\b[Tt]his is ([A-Z][a-z]+)(?: speaking| from| with)\b/,
+    /\b([A-Z][a-z]+) speaking\b/,
+    /\b(?:it's|this is) ([A-Z][a-z]+) from\b/i,
+    /\b([A-Z][a-z]+) from (?:bug|endeavor|noble|abc)/i,
+  ];
+  for (const t of texts.slice(0, 8)) {
+    for (const p of patterns) {
+      const m = p.exec(t);
+      if (m && !["the", "this", "calling"].includes(m[1].toLowerCase())) names.add(m[1].toLowerCase());
+    }
+  }
+  return names;
+}
