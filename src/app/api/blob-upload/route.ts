@@ -25,3 +25,31 @@ export async function POST(request: Request) {
         getSignedToken: async (pathname) => {
           if (!pathname.startsWith("calls/")) throw new Error("Invalid upload path");
           const token = await issueSignedToken({
+            pathname,
+            operations: ["put"],
+            allowedContentTypes: ALLOWED_TYPES,
+            maximumSizeInBytes: MAX_BYTES,
+            validUntil: Date.now() + 15 * 60 * 1000,
+          });
+          return {
+            token,
+            urlOptions: { allowedContentTypes: ALLOWED_TYPES, maximumSizeInBytes: MAX_BYTES, addRandomSuffix: true },
+          };
+        },
+      });
+      return Response.json(result);
+    }
+
+    const result = await handleUpload({
+      body: body as HandleUploadBody,
+      request,
+      onBeforeGenerateToken: async (pathname) => {
+        if (!pathname.startsWith("calls/")) throw new Error("Invalid upload path");
+        return { allowedContentTypes: ALLOWED_TYPES, maximumSizeInBytes: MAX_BYTES, addRandomSuffix: true };
+      },
+    });
+    return Response.json(result);
+  } catch (err) {
+    return Response.json({ error: err instanceof Error ? err.message : "Upload failed" }, { status: 400 });
+  }
+}
