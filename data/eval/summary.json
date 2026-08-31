@@ -20,3 +20,26 @@
     "rep": {
       "ok": 40,
       "of": 40
+    },
+    "quotesVerified": {
+      "ok": 665,
+      "of": 667
+    }
+  },
+  "consistency": {
+    "callType": {
+      "ok": 20,
+      "of": 20
+    },
+    "outcome": {
+      "ok": 20,
+      "of": 20
+    },
+    "steps": {
+      "ok": 268,
+      "of": 300
+    },
+    "scoreSpreadAvg": 0.9,
+    "scoreSpreadMax": 3
+  }
+}

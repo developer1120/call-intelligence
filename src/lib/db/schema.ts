@@ -62,3 +62,35 @@ export const analyses = pgTable(
   {
     id: text("id").primaryKey(),
     callId: text("call_id")
+      .notNull()
+      .references(() => calls.id, { onDelete: "cascade" }),
+    isCurrent: boolean("is_current").notNull().default(true),
+    model: text("model").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    callType: text("call_type").notNull(),
+    scorecardId: text("scorecard_id"),
+    score: integer("score"),
+    maxScore: integer("max_score"),
+    grade: text("grade"),
+    outcome: text("outcome").notNull(),
+    needsReview: boolean("needs_review").notNull().default(false),
+    data: jsonb("data").$type<CallAnalysis>().notNull(),
+    inputTokens: integer("input_tokens").notNull().default(0),
+    outputTokens: integer("output_tokens").notNull().default(0),
+    durationMs: integer("duration_ms").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("analyses_call_idx").on(t.callId, t.isCurrent)],
+);
+
+export type TaskStatus = "open" | "done";
+
+export const tasks = pgTable(
+  "tasks",
+  {
+    id: text("id").primaryKey(),
+    callId: text("call_id").references(() => calls.id, { onDelete: "cascade" }),
+    /** Stable key of the insight that produced this task, so it is never assigned twice. */
+    sourceKey: text("source_key").notNull().unique(),
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
