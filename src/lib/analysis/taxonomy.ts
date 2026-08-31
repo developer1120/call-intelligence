@@ -79,3 +79,30 @@ export const OUTCOME_DEFINITIONS: Record<Outcome, string> = {
   resolved: "The existing customer's request was fully handled on the call (rescheduled, card updated, re-service booked, question answered).",
   follow_up: "Nothing final yet: a callback, quote, manager follow-up or customer decision is still pending.",
   lost: "A prospect did not buy and no follow-up was set.",
+  cancelled: "The customer's service was cancelled.",
+  unresolved: "The customer's issue was not handled and no clear next step was set.",
+  no_conversation: "No real conversation took place (voicemail, wrong number, dropped call).",
+};
+
+export const OUTCOME_LABEL: Record<Outcome, string> = {
+  booked: "Booked",
+  saved: "Saved",
+  resolved: "Resolved",
+  follow_up: "Follow-up needed",
+  lost: "Lost",
+  cancelled: "Cancelled",
+  unresolved: "Unresolved",
+  no_conversation: "No conversation",
+};
+
+export type OutcomeTone = "positive" | "neutral" | "negative" | "muted";
+export const OUTCOME_TONE: Record<Outcome, OutcomeTone> = {
+  booked: "positive",
+  saved: "positive",
+  resolved: "positive",
+  follow_up: "neutral",
+  lost: "negative",
+  cancelled: "negative",
+  unresolved: "negative",
+  no_conversation: "muted",
+};
