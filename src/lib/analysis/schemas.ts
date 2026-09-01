@@ -129,3 +129,36 @@ export function scoringSchemaFor(id: ScorecardId) {
   return z.object({
     items: z.object(shape),
     coaching: z.object({
+      headline: z.string().describe("The single most valuable change for this rep on this call, one sentence"),
+      strengths: z.array(
+        z.object({ title: z.string(), detail: z.string(), evidence: EvidenceSchema }),
+      ),
+      improvements: z.array(
+        z.object({
+          itemId: z.enum(itemIds).nullable(),
+          title: z.string(),
+          whatHappened: z.string(),
+          impact: z.string().describe("Why it matters for the customer or the business on THIS call"),
+          tryThis: z.string().describe("A word-for-word line the rep could have said, in the manual's style, using this call's details"),
+          evidence: EvidenceSchema.nullable(),
+        }),
+      ),
+    }),
+  });
+}
+
+export type ScoringResult = {
+  items: Record<string, { status: "met" | "missed" | "not_needed"; reasoning: string; evidence: EvidenceRef[] }>;
+  coaching: {
+    headline: string;
+    strengths: { title: string; detail: string; evidence: EvidenceRef }[];
+    improvements: {
+      itemId: string | null;
+      title: string;
+      whatHappened: string;
+      impact: string;
+      tryThis: string;
+      evidence: EvidenceRef | null;
+    }[];
+  };
+};
