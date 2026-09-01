@@ -28,3 +28,34 @@ export function CallTypeBadge({ type, className }: { type: CallType; className?:
   );
 }
 
+export function OutcomeBadge({ outcome, className }: { outcome: Outcome; className?: string }) {
+  const tone = OUTCOME_TONE[outcome];
+  return (
+    <Badge
+      dot
+      className={className}
+      tone={tone === "positive" ? "green" : tone === "negative" ? "red" : tone === "neutral" ? "orange" : "muted"}
+    >
+      {OUTCOME_LABEL[outcome]}
+    </Badge>
+  );
+}
+
+export const GRADE_STYLE: Record<Grade, { text: string; bg: string; ring: string; solid: string }> = {
+  gold: { text: "text-gold-ink", bg: "bg-gold-soft", ring: "#c9971c", solid: "bg-gold" },
+  green: { text: "text-green-ink", bg: "bg-green-soft", ring: "#28a745", solid: "bg-green" },
+  below: { text: "text-red-ink", bg: "bg-red-soft", ring: "#ff3b30", solid: "bg-red" },
+};
+
+/** "11/12 · Green" pill used in lists. */
+export function ScorePill({
+  value,
+  className,
+}: {
+  value: Pick<ScorecardResult, "score" | "max" | "grade"> | null;
+  className?: string;
+}) {
+  if (!value) {
+    return <span className={cn("text-[12.5px] text-ink-4", className)}>Not graded</span>;
+  }
+  const s = GRADE_STYLE[value.grade];

@@ -25,3 +25,30 @@ export async function POST(request: Request) {
       transcript: Transcript;
       analysis: CallAnalysis;
     };
+    if (!body.audioUrl || !body.transcript || !body.analysis) {
+      return Response.json({ error: "Expected filename, audioUrl, transcript and analysis" }, { status: 400 });
+    }
+    const id = await importAnalyzedCall({
+      filename: body.filename,
+      stored: { key: body.audioUrl, bytes: body.bytes },
+      transcript: body.transcript,
+      analysis: body.analysis,
+    });
+    return Response.json({ id });
+  }
+
+  const form = await request.formData();
+  const file = form.get("file");
+  const transcript = form.get("transcript");
+  const analysis = form.get("analysis");
+  if (!(file instanceof File) || typeof transcript !== "string" || typeof analysis !== "string") {
+    return Response.json({ error: "Expected file, transcript and analysis" }, { status: 400 });
+  }
+  const id = await importAnalyzedCall({
+    filename: file.name,
+    data: Buffer.from(await file.arrayBuffer()),
+    transcript: JSON.parse(transcript) as Transcript,
+    analysis: JSON.parse(analysis) as CallAnalysis,
+  });
+  return Response.json({ id });
+}
