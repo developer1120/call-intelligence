@@ -26,3 +26,32 @@ export function AssignButton({
   size = "md",
 }: {
   payload: AssignPayload;
+  people: string[];
+  task: { id: string; assignee: string; status: string } | null;
+  size?: "sm" | "md";
+}) {
+  const [open, setOpen] = useState(false);
+  const [pending, start] = useTransition();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  const assign = (assignee: string) => {
+    setOpen(false);
+    start(() => assignTask({ ...payload, assignee }));
+  };
+
+  if (task) {
+    const done = task.status === "done";
+    return (
+      <div className="flex shrink-0 items-center gap-1.5">
+        <span className={cn("inline-flex items-center gap-1.5 text-[12.5px]", done ? "text-green-ink" : "text-ink-2")}>
+          {done ? <Check className="size-3.5" /> : <Avatar name={task.assignee} size={20} />}
+          {done ? "Done" : task.assignee}
+        </span>
+        <button
