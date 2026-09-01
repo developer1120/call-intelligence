@@ -68,3 +68,38 @@ export async function transcribeAudio(audio: Buffer, mime: string, roster: strin
   if (!apiKey) throw new TranscriptionError("DEEPGRAM_API_KEY is not set");
 
   const client = new DeepgramClient({ apiKey });
+  let response;
+  try {
+    response = await client.listen.v1.media.transcribeFile(
+      new Blob([new Uint8Array(audio)], { type: mime }),
+      {
+        model: TRANSCRIPTION_MODEL,
+        language: "en-US",
+        // v2 is Deepgram's current batch diarizer; the old `diarize` flag uses v1.
+        diarize_model: "v2",
+        utterances: true,
+        // Split on shorter pauses so quick back-and-forth turns don't merge into one utterance.
+        utt_split: 0.6,
+        punctuate: true,
+        smart_format: true,
+        // Card numbers read out on billing calls never reach storage or the AI.
+        redact: "pci",
+        // Entities let us mask customer names, phones, emails and addresses (see pii.ts).
+        detect_entities: maskPii(),
+        keyterm: KEY_TERMS,
+      },
+      { timeoutInSeconds: 300, maxRetries: 2 },
+    );
+  } catch (err) {
+    if (err instanceof DeepgramError) {
+      throw new TranscriptionError(`Deepgram ${err.statusCode}: ${err.message}`);
+    }
+    throw err;
+  }
+
+  if (!("results" in response)) {
+    throw new TranscriptionError("Deepgram returned an async callback response");
+  }
+  const raw = (response.results.utterances ?? []).filter((u) => (u.transcript ?? "").trim().length > 0);
+  const alt = response.results.channels?.[0]?.alternatives?.[0];
+  const words = alt?.words ?? [];
