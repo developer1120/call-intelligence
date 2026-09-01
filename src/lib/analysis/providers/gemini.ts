@@ -109,3 +109,40 @@ export async function geminiStructured<S extends z.ZodType>(req: StructuredReque
       if (err instanceof ApiError) {
         if (err.status === 400 && thinkingSupported && /thinking/i.test(err.message)) {
           thinkingSupported = false;
+          continue;
+        }
+        if (err.status === 429 && /free_tier[^"]*limit: 0/.test(err.message)) {
+          throw new AnalysisError(
+            `This Gemini API key is on the free tier, which has no quota for ${model}. Turn on billing for the key's project in Google AI Studio (API keys → Set up billing).`,
+          );
+        }
+        if (err.status === 429 && /PerDay/.test(err.message) && !/PerMinute/.test(err.message)) {
+          if (modelIndex < models.length - 1) {
+            // This model's daily quota is used up: continue on the next model in the list.
+            modelIndex++;
+            overloadedTries = 0;
+            continue;
+          }
+          throw new AnalysisError(
+            `Gemini's daily free-tier limit for ${model} is used up. It resets within 24 hours, or turn on billing for higher limits.`,
+          );
+        }
+        if (err.status === 503 && modelIndex < models.length - 1 && ++overloadedTries >= 2) {
+          // Overloaded twice: move to the next model in the list.
+          modelIndex++;
+          overloadedTries = 0;
+          continue;
+        }
+        if (err.status === 429 || err.status >= 500) {
+          // Rate limited or overloaded: wait as long as Google asks, else back off (5s, 10s, 20s… max 60s).
+          await sleep(retryAfterMs(err.message) ?? Math.min(60_000, 5000 * 2 ** attempt));
+          continue;
+        }
+        throw new AnalysisError(`Gemini ${err.status}: ${err.message.slice(0, 300)}`);
+      }
+      if (err instanceof AnalysisError && err.message.startsWith("Model declined")) throw err;
+      // JSON / schema mismatch: retry
+    }
+  }
+  throw lastError;
+}

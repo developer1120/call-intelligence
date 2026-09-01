@@ -113,3 +113,42 @@ describe("scoring rules", () => {
   );
 
   it("grade bands match the manuals", () => {
+    expect(gradeFor(SCORECARDS.sales, 17)).toBe("gold");
+    expect(gradeFor(SCORECARDS.sales, 14)).toBe("green");
+    expect(gradeFor(SCORECARDS.sales, 13)).toBe("below");
+    expect(gradeFor(SCORECARDS.service, 12)).toBe("gold");
+    expect(gradeFor(SCORECARDS.service, 11)).toBe("green");
+    expect(gradeFor(SCORECARDS.service, 10)).toBe("below");
+    expect(SCORECARDS.sales.items).toHaveLength(17);
+    expect(SCORECARDS.service.items).toHaveLength(12);
+    expect(SCORECARDS.retention.items).toHaveLength(12);
+  });
+
+  it("auto-awards the 4 objection points when the customer raised no objection", () => {
+    const items = { ...allMet };
+    for (const id of ["obj_agree", "obj_restate", "obj_resolve", "obj_reclose"]) {
+      items[id] = { status: "missed", reasoning: "no objection", evidence: [] };
+    }
+    const a = assemble(transcript, triage(), card, scoring(items), {}, { inputTokens: 0, outputTokens: 0, durationMs: 0 }, "m");
+    expect(a.scorecard!.score).toBe(17);
+    expect(a.scorecard!.items.filter((i) => i.status === "not_needed")).toHaveLength(4);
+  });
+
+  it("requires the objection steps when an objection was raised", () => {
+    const items = { ...allMet, obj_agree: { status: "not_needed" as const, reasoning: "", evidence: [] } };
+    const t = triage({
+      objections: [{ type: "price", summary: "Too expensive", evidence: { u: 4, quote: "let's do it" }, handling: "resolved" }],
+    });
+    const a = assemble(transcript, t, card, scoring(items), {}, { inputTokens: 0, outputTokens: 0, durationMs: 0 }, "m");
+    const agree = a.scorecard!.items.find((i) => i.id === "obj_agree")!;
+    expect(agree.credited).toBe(false);
+    expect(a.scorecard!.score).toBe(16);
+  });
+
+  it("withholds a point whose only evidence can't be found, and flags the call for review", () => {
+    const items = { ...allMet, validate: { status: "met" as const, reasoning: "", evidence: [{ u: 2, quote: "totally made up sentence here" }] } };
+    const a = assemble(transcript, triage(), card, scoring(items), {}, { inputTokens: 0, outputTokens: 0, durationMs: 0 }, "m");
+    expect(a.scorecard!.items.find((i) => i.id === "validate")!.credited).toBe(false);
+    expect(a.quality.needsReview).toBe(true);
+  });
+
