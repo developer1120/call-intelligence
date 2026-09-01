@@ -302,3 +302,79 @@ export const SCORECARDS: Record<ScorecardId, Scorecard> = {
         label: "Present solution",
         standard:
           "Offer a specific, tailored save solution from the solution bank (free re-service, back-to-back services, custom plan, waive a month, set day/tech, account hold, manager visit, 10% price drop as last resort), building value.",
+        example:
+          "What I can do is, I'll send out my head technician to come do a free re-service for you… Does that work for you?",
+      },
+      {
+        id: "ret_consensus",
+        quadrant: "Solve",
+        label: "Consensus",
+        standard: "Get buy-in on the offer (\"does that work for you?\", \"how does that sound?\").",
+        example: "How does that sound?",
+      },
+      {
+        id: "ret_repeat",
+        quadrant: "Solve",
+        label: "Repeat (when necessary)",
+        standard:
+          "If the first offer is declined, circle back: ask more open-ended questions and offer a new solution (contract/fee only after solutions fail, phrased on their side).",
+        example: "I understand. Well, the reason I was offering those different options is because you're still within the initial 12 month period…",
+        creditWhenNotNeeded: "The first solution was accepted, so repeating was not necessary.",
+      },
+      {
+        id: "ret_conclusion",
+        quadrant: "Verify",
+        label: "Provide a conclusion",
+        standard: "Wrap up loose ends and confirm what happens next (dates, notes, technician, fee/waiver details).",
+        example: "Perfect, I got that in. Your technician will be there Thursday morning.",
+      },
+      {
+        id: "ret_thank",
+        quadrant: "Verify",
+        label: "Thank the customer",
+        standard: "Genuinely thank the customer.",
+        example: "I just want to thank you for calling in and working with me today.",
+      },
+      {
+        id: "ret_teaser",
+        quadrant: "Verify",
+        label: "Leave a teaser",
+        standard: "When the cancel goes through, end on a high note with an incentive to come back (e.g. a free initial service noted on the account).",
+        example: "If you ever want to try us again… I'm going to give you a FREE initial service. I'll put that in the notes in your account.",
+        creditWhenNotNeeded: "The customer was saved, so no teaser was needed.",
+      },
+    ],
+  },
+};
+
+export type Grade = "gold" | "green" | "below";
+
+export function gradeFor(scorecard: Scorecard, score: number): Grade {
+  if (score >= scorecard.bands.gold) return "gold";
+  if (score >= scorecard.bands.green) return "green";
+  return "below";
+}
+
+export const GRADE_LABEL: Record<Grade, string> = {
+  gold: "Gold Standard",
+  green: "Green Standard",
+  below: "Below Standard",
+};
+
+/** Refresh step names/standards on a stored scorecard from the current rubric (wording fixes apply without re-scoring). */
+export function withCurrentRubric<T extends { id: ScorecardId; items: { id: string; label: string; standard: string; example: string }[] }>(
+  scorecard: T | null,
+): T | null {
+  if (!scorecard) return scorecard;
+  const card = SCORECARDS[scorecard.id];
+  if (!card) return scorecard;
+  const byId = new Map(card.items.map((i) => [i.id, i]));
+  return {
+    ...scorecard,
+    name: card.name,
+    items: scorecard.items.map((it) => {
+      const r = byId.get(it.id);
+      return r ? { ...it, label: r.label, standard: r.standard, example: r.example } : it;
+    }),
+  };
+}
