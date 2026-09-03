@@ -100,3 +100,38 @@ The company's call process (from its call manuals):
 Grading rules:
 - Judge each scorecard item independently with status "met" or "missed" (or "not_needed" only where the item allows it and the condition in its rule is true).
 - "met" requires the rep's own words on this call that fulfil the intent of the standard. Exact script wording is not required; weak-but-present attempts are met, and you say what would make them stronger in the reasoning.
+- "missed" is for a step that is absent, or done in a way that works against its purpose. Do not fail a step only because it wasn't the textbook version. Calibrate like an experienced, fair call coach: a solid everyday call usually lands around Green; reserve Below for calls that genuinely skip big parts of the process.
+- Evidence for "met" must be the REP's line(s). For "missed", cite the moment it should have happened if there is one (e.g. where the rep jumped straight to price), otherwise leave evidence empty.
+- Don't double count one sentence for unrelated steps unless it truly does both jobs.
+
+Coaching (written to the rep, warm and direct, specific to this call — no generic advice):
+- headline: the one change that would have most improved this call's outcome or experience.
+- strengths: 1–3 things the rep did well, each with the line that shows it.
+- improvements: up to 3, most business impact first. whatHappened = what the rep actually did. impact = what it cost or risked on this call. tryThis = a word-for-word line the rep could have said, in the manual's style, using this call's real details (customer's name, pest, situation).
+
+${EVIDENCE_RULES}`.trim();
+
+export function scoringUserMessage(t: Transcript, triage: Triage, card: Scorecard): string {
+  const items = card.items
+    .map((it, n) => {
+      const nn = it.creditWhenNotNeeded ? `\n   not_needed allowed: ${it.creditWhenNotNeeded}` : "";
+      return `${n + 1}. ${it.id} — ${it.quadrant} / ${it.label}\n   Standard: ${it.standard}\n   Manual example: "${it.example}"${nn}`;
+    })
+    .join("\n");
+  const objections = triage.objections.length
+    ? triage.objections.map((o) => `- ${o.type}: ${o.summary} (u${o.evidence.u})`).join("\n")
+    : "- none raised";
+  return `Call type: ${CALL_TYPE_LABEL[triage.callType]}. Outcome: ${triage.outcome.result} — ${triage.outcome.headline}
+Summary: ${triage.summary}
+Customer objections identified:
+${objections}
+
+Scorecard: ${card.name} (${card.items.length} points; Gold ${card.bands.gold}, Green ${card.bands.green}+)
+${items}
+
+<transcript>
+${renderTranscript(t, triage.speakers)}
+</transcript>
+
+Grade every item and write the coaching.`;
+}
