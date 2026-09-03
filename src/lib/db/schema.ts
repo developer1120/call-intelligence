@@ -94,3 +94,35 @@ export const tasks = pgTable(
     sourceKey: text("source_key").notNull().unique(),
     kind: text("kind").notNull(),
     title: text("title").notNull(),
+    detail: text("detail").notNull().default(""),
+    assignee: text("assignee").notNull(),
+    priority: text("priority").$type<"high" | "medium" | "low">().notNull().default("medium"),
+    status: text("status").$type<TaskStatus>().notNull().default("open"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (t) => [index("tasks_status_idx").on(t.status)],
+);
+
+/** Manager corrections. Applied on top of the AI result and kept across re-analysis. */
+export const overrides = pgTable(
+  "overrides",
+  {
+    id: text("id").primaryKey(),
+    callId: text("call_id")
+      .notNull()
+      .references(() => calls.id, { onDelete: "cascade" }),
+    /** "item:<itemId>" or "callType" */
+    field: text("field").notNull(),
+    value: text("value").notNull(),
+    note: text("note").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("overrides_call_idx").on(t.callId)],
+);
+
+export type CallRow = typeof calls.$inferSelect;
+export type RepRow = typeof reps.$inferSelect;
+export type AnalysisRow = typeof analyses.$inferSelect;
+export type TaskRow = typeof tasks.$inferSelect;
+export type OverrideRow = typeof overrides.$inferSelect;
