@@ -23,3 +23,28 @@ const AUDIO_EXT = /\.(mp3|wav|m4a|mp4|ogg|webm|flac)$/i;
  * - JSON { uploads: [{ url, filename }] } for recordings already uploaded to Blob storage
  *   (production: the browser uploads straight to Blob, bypassing the 4.5 MB function body limit).
  */
+export async function POST(request: Request) {
+  const ids: string[] = [];
+  const errors: string[] = [];
+  const type = request.headers.get("content-type") ?? "";
+
+  if (type.includes("multipart/form-data")) {
+    const form = await request.formData();
+    for (const entry of form.getAll("files")) {
+      if (!(entry instanceof File)) continue;
+      if (!AUDIO_EXT.test(entry.name)) {
+        errors.push(`${entry.name}: not an audio file`);
+        continue;
+      }
+      if (entry.size > MAX_BYTES) {
+        errors.push(`${entry.name}: larger than 60 MB`);
+        continue;
+      }
+      ids.push(await createCall({ filename: entry.name, data: Buffer.from(await entry.arrayBuffer()), mime: entry.type }));
+    }
+  } else {
+    const body = (await request.json().catch(() => null)) as {
+      uploads?: { url: string; filename: string; size: number }[];
+    } | null;
+    for (const u of body?.uploads ?? []) {
+      if (!blobEnabled() || !isBlobUrl(u.url) || !AUDIO_EXT.test(u.filename)) {
