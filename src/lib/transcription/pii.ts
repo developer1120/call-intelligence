@@ -55,3 +55,32 @@ export function employeeNames(texts: string[]): Set<string> {
   }
   return names;
 }
+
+const EMAIL_RE = /\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b/g;
+const PHONE_RE = /(?:\(\d{3}\)\s?|\b\d{3}[-.\s])\d{3}[-.\s]\d{4}\b/g;
+
+/** Backstop for anything entity detection missed. */
+export function maskPatterns(text: string): string {
+  return text.replace(EMAIL_RE, "[EMAIL]").replace(PHONE_RE, "[PHONE]");
+}
+
+/**
+ * Mask words of each utterance that fall inside a detected PII entity.
+ * `allWords`/`entities` are the channel-level arrays (entities index into allWords);
+ * utterances carry their own word lists with timings.
+ */
+export function maskUtterance(
+  uttWords: DgWord[],
+  fallbackText: string,
+  spans: { start: number; end: number; tag: string }[],
+): string {
+  if (!uttWords.length) return maskPatterns(fallbackText);
+  const out: string[] = [];
+  let lastTag: string | null = null;
+  for (const w of uttWords) {
+    const t = w.start ?? 0;
+    // A word belongs to a span if it starts inside it. The next word often starts at the exact
+    // moment the entity ends, so the end bound is exclusive.
+    const span = spans.find((s) => t >= s.start - 0.01 && t < s.end - 0.005);
+    const text = w.punctuated_word ?? w.word ?? "";
+    if (span) {

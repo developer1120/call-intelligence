@@ -59,3 +59,34 @@ export function ScorePill({
     return <span className={cn("text-[12.5px] text-ink-4", className)}>Not graded</span>;
   }
   const s = GRADE_STYLE[value.grade];
+  return (
+    <span
+      title={GRADE_LABEL[value.grade]}
+      className={cn("inline-flex h-[24px] items-center gap-1.5 rounded-full pr-2.5 pl-1 text-[12.5px] font-semibold tabular", s.bg, s.text, className)}
+    >
+      <span className={cn("grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 text-[10.5px] text-white", s.solid)}>
+        {value.grade === "gold" ? "★" : value.grade === "green" ? "✓" : "!"}
+      </span>
+      {value.score}/{value.max}
+    </span>
+  );
+}
+
+/** Circular score with the grade colour. */
+export function ScoreRing({
+  score,
+  max,
+  grade,
+  size = 88,
+  stroke = 8,
+}: {
+  score: number;
+  max: number;
+  grade: Grade;
+  size?: number;
+  stroke?: number;
+}) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const frac = max ? score / max : 0;
+  return (
