@@ -45,3 +45,51 @@ function UploadDialog({ directUpload, onClose }: { directUpload: boolean; onClos
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [dragging, setDragging] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const update = (key: string, patch: Partial<Item>) =>
+    setItems((list) => list.map((i) => (i.key === key ? { ...i, ...patch } : i)));
+
+  const start = useCallback(
+    async (files: File[]) => {
+      const fresh = files.map((f) => ({ key: `${f.name}-${f.size}-${Math.random()}`, name: f.name, size: f.size, stage: "uploading" as Stage }));
+      setItems((list) => [...fresh, ...list]);
+      // One request per file so each shows its own progress and one bad file can't sink the batch.
+      await Promise.all(
+        files.map(async (file, n) => {
+          const key = fresh[n].key;
+          try {
+            let res: Response;
+            if (directUpload) {
+              const { uploadPresigned } = await import("@vercel/blob/client");
+              const blob = await uploadPresigned(`calls/${file.name}`, file, {
+                access: "private",
+                handleUploadUrl: "/api/blob-upload",
+                contentType: file.type || undefined,
+              });
+              res = await fetch("/api/calls", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ uploads: [{ url: blob.url, filename: file.name, size: file.size }] }),
+              });
+            } else {
+              const form = new FormData();
+              form.append("files", file);
+              res = await fetch("/api/calls", { method: "POST", body: form });
+            }
+            const json = (await res.json()) as { ids: string[]; errors: string[] };
+            if (!res.ok || !json.ids[0]) throw new Error(json.errors?.[0] ?? "Upload failed");
+            update(key, { id: json.ids[0], stage: "queued" });
+          } catch (err) {
+            update(key, { stage: "failed", error: err instanceof Error ? err.message : "Upload failed" });
+          }
+        }),
+      );
+    },
+    [directUpload],
+  );
+
+  // Poll processing status for uploaded calls.
+  const pending = items.filter((i) => i.id && i.stage !== "complete" && i.stage !== "failed");
+  const pendingIds = pending.map((i) => i.id).join(",");
+  useEffect(() => {
+    if (!pendingIds) return;
