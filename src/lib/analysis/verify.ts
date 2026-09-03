@@ -88,3 +88,34 @@ export class EvidenceVerifier {
     }
     if (best.score < MATCH_THRESHOLD) {
       // The model cited the wrong line: search the whole call.
+      for (let s = 0; s < utts.length; s++) {
+        for (let len = 0; len < 3; len++) tryWindow(s, s + len);
+      }
+    }
+
+    const verified = best.score >= MATCH_THRESHOLD;
+    if (verified) this.verified++;
+    const u = verified ? best.u : clamp(ref.u, 0, utts.length - 1);
+    const utt = utts[u];
+    return {
+      u,
+      quote,
+      start: utt?.start ?? 0,
+      end: utt?.end ?? 0,
+      role: this.roleOf(u),
+      verified,
+    };
+  }
+
+  locateAll(refs: EvidenceRef[]): Evidence[] {
+    return refs.filter((r) => r.quote.trim()).map((r) => this.locate(r));
+  }
+
+  locateMaybe(ref: EvidenceRef | null): Evidence | null {
+    return ref && ref.quote.trim() ? this.locate(ref) : null;
+  }
+}
+
+function clamp(n: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, n));
+}
