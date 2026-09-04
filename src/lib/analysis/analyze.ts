@@ -239,3 +239,64 @@ export function moneyFor(triage: Pick<Triage, "callType" | "outcome" | "details"
   }
   if (quoted && quoted > 0) return { annualValue: Math.round(quoted), basis: "quoted", direction };
   return { annualValue: DEFAULT_ANNUAL_VALUE, basis: "estimated", direction };
+}
+
+function moneyDirection(type: CallType, result: Outcome): Money["direction"] {
+  if (type === "new_customer") {
+    if (result === "booked") return "won";
+    if (result === "lost") return "lost";
+    if (result === "follow_up" || result === "unresolved") return "at_risk";
+  }
+  if (type === "retention" || result === "cancelled") {
+    if (result === "saved") return "saved";
+    if (result === "cancelled") return "lost";
+    if (result === "follow_up" || result === "unresolved") return "at_risk";
+  }
+  return null;
+}
+
+function emptyTriage(): Triage {
+  return {
+    speakers: [],
+    repName: null,
+    customerName: null,
+    companyName: null,
+    direction: "unknown",
+    callType: "not_scoreable",
+    callTypeConfidence: "high",
+    callTypeReason: "No speech was detected in the recording.",
+    callTypeEvidence: [],
+    notScoreableReason: "dropped_or_too_short",
+    customerStatus: "unknown",
+    summary: "The recording contains no detectable speech.",
+    outcome: { result: "no_conversation", headline: "No speech in recording", evidence: [] },
+    details: {
+      pests: [],
+      serviceDiscussed: null,
+      property: null,
+      appointment: null,
+      pricing: { anchorPrice: null, initialPrice: null, recurringPrice: null, recurringFrequency: null, notes: null },
+      cancellationReason: null,
+      saveOffer: null,
+      competitor: null,
+    },
+    objections: [],
+    followUps: [],
+    opportunities: [],
+    risks: [],
+    sentiment: { start: "neutral", end: "neutral", note: "" },
+  };
+}
+
+/** Masked placeholders like "[NAME]" are not names. */
+function unmasked(name: string | null) {
+  return name && !/\[[A-Z_]+\]/.test(name) ? name : null;
+}
+
+function add(a: Usage, b: Usage) {
+  a.inputTokens += b.inputTokens;
+  a.outputTokens += b.outputTokens;
+  a.durationMs += b.durationMs;
+}
+
+export { PROMPT_VERSION };
