@@ -84,3 +84,32 @@ export function maskUtterance(
     const span = spans.find((s) => t >= s.start - 0.01 && t < s.end - 0.005);
     const text = w.punctuated_word ?? w.word ?? "";
     if (span) {
+      if (lastTag !== span.tag) {
+        // keep trailing punctuation of the masked word so sentences still read naturally
+        const punct = /[.,!?]$/.exec(text)?.[0] ?? "";
+        out.push(span.tag + punct);
+      } else if (/[.,!?]$/.test(text)) {
+        out[out.length - 1] = out[out.length - 1].replace(/[.,!?]?$/, text.slice(-1));
+      }
+      lastTag = span.tag;
+    } else {
+      out.push(text);
+      lastTag = null;
+    }
+  }
+  return maskPatterns(out.join(" "));
+}
+
+export function piiSpans(allWords: DgWord[], entities: DgEntity[], keepNames: Set<string>) {
+  const spans: { start: number; end: number; tag: string }[] = [];
+  for (const e of entities) {
+    const tag = PLACEHOLDER[e.label ?? ""];
+    if (!tag || e.start_word == null || e.end_word == null) continue;
+    if (NAME_LABELS.has(e.label!) && (e.value ?? "").split(/\s+/).every((p) => keepNames.has(p.toLowerCase()))) continue;
+    const first = allWords[e.start_word];
+    const last = allWords[Math.max(e.start_word, e.end_word - 1)];
+    if (!first || !last) continue;
+    spans.push({ start: first.start ?? 0, end: last.end ?? first.end ?? 0, tag });
+  }
+  return spans;
+}
