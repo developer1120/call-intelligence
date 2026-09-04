@@ -152,3 +152,42 @@ describe("scoring rules", () => {
     expect(a.quality.needsReview).toBe(true);
   });
 
+  it("applies manager overrides on top of the AI result", () => {
+    const a = assemble(transcript, triage(), card, scoring(allMet), { items: { pricing: false } }, { inputTokens: 0, outputTokens: 0, durationMs: 0 }, "m");
+    const pricing = a.scorecard!.items.find((i) => i.id === "pricing")!;
+    expect(pricing).toMatchObject({ credited: false, overridden: true });
+    expect(a.scorecard!.score).toBe(16);
+    expect(a.scorecard!.grade).toBe("green");
+  });
+
+  it("only allows the retention teaser to be skipped when the customer was saved", () => {
+    const ret = SCORECARDS.retention;
+    const items = Object.fromEntries(
+      ret.items.map((i) => [i.id, { status: "met" as const, reasoning: "", evidence: [{ u: 2, quote: "I can definitely take care of that for you" }] }]),
+    ) as ScoringResult["items"];
+    items.ret_teaser = { status: "not_needed", reasoning: "", evidence: [] };
+    const cancelled = triage({ callType: "retention", outcome: { result: "cancelled", headline: "", evidence: [] } });
+    const saved = triage({ callType: "retention", outcome: { result: "saved", headline: "", evidence: [] } });
+    const usage = { inputTokens: 0, outputTokens: 0, durationMs: 0 };
+    expect(assemble(transcript, cancelled, ret, scoring(items), {}, usage, "m").scorecard!.score).toBe(11);
+    expect(assemble(transcript, saved, ret, scoring(items), {}, usage, "m").scorecard!.score).toBe(12);
+  });
+});
+
+describe("revenue", () => {
+  it("annualizes quoted prices for a booked sale", () => {
+    expect(moneyFor(triage())).toEqual({ annualValue: 199 + 49 * 12, basis: "quoted", direction: "won" });
+  });
+
+  it("falls back to an estimate when no price was said", () => {
+    const t = triage({
+      outcome: { result: "lost", headline: "", evidence: [] },
+      details: { ...triage().details, pricing: { anchorPrice: null, initialPrice: null, recurringPrice: null, recurringFrequency: null, notes: null } },
+    });
+    expect(moneyFor(t)).toMatchObject({ basis: "estimated", direction: "lost" });
+  });
+
+  it("has no revenue impact for routine service calls", () => {
+    expect(moneyFor(triage({ callType: "scheduling", outcome: { result: "resolved", headline: "", evidence: [] } })).direction).toBeNull();
+  });
+});
