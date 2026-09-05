@@ -69,3 +69,39 @@ export function ItemOverride({
       )}
     </div>
   );
+}
+
+function MenuItem({ onClick, icon, children, danger }: { onClick: () => void; icon: React.ReactNode; children: React.ReactNode; danger?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn("flex w-full items-center gap-2 rounded-[8px] px-2.5 py-1.5 text-left hover:bg-sunken", danger && "text-red-ink")}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+export function CallActions({ callId, callType, typeOverridden }: { callId: string; callType: CallType | null; typeOverridden: boolean }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [pending, start] = useTransition();
+  const [busy, setBusy] = useState<string | null>(null);
+  const ref = useClickAway(open, () => setOpen(false));
+
+  const act = (label: string, fn: () => Promise<void>) => {
+    setOpen(false);
+    setBusy(label);
+    start(async () => {
+      await fn();
+      setBusy(null);
+    });
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        disabled={pending}
+        className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-hairline-strong bg-surface px-3 text-[13.5px] font-medium hover:bg-sunken disabled:opacity-60"
