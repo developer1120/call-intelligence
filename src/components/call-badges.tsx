@@ -90,3 +90,34 @@ export function ScoreRing({
   const c = 2 * Math.PI * r;
   const frac = max ? score / max : 0;
   return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#ececf0" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={GRADE_STYLE[grade].ring}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${c * frac} ${c}`}
+        />
+      </svg>
+      <div className="absolute inset-0 grid place-items-center text-center">
+        <div>
+          <div className="font-display text-[22px] leading-none font-semibold tabular text-ink" style={{ fontSize: size * 0.26 }}>
+            {score}
+            <span className="text-ink-4" style={{ fontSize: size * 0.16 }}>
+              /{max}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function GradeLabel({ grade, className }: { grade: Grade; className?: string }) {
+  return <span className={cn("font-semibold", GRADE_STYLE[grade].text, className)}>{GRADE_LABEL[grade]}</span>;
+}
