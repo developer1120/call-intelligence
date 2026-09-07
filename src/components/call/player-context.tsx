@@ -22,3 +22,28 @@ export function usePlayer() {
   const ctx = useContext(Ctx);
   if (!ctx) throw new Error("usePlayer must be used inside <PlayerProvider>");
   return ctx;
+}
+
+export function PlayerProvider({ src, initialDuration, children }: { src: string; initialDuration: number; children: ReactNode }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [time, setTime] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [duration, setDuration] = useState(initialDuration);
+  const [focus, setFocus] = useState<{ u: number | null; n: number }>({ u: null, n: 0 });
+  const [rate, setRateState] = useState(1);
+
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    const onTime = () => setTime(a.currentTime);
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    const onMeta = () => Number.isFinite(a.duration) && setDuration(a.duration);
+    a.addEventListener("timeupdate", onTime);
+    a.addEventListener("play", onPlay);
+    a.addEventListener("pause", onPause);
+    a.addEventListener("loadedmetadata", onMeta);
+    return () => {
+      a.removeEventListener("timeupdate", onTime);
+      a.removeEventListener("play", onPlay);
+      a.removeEventListener("pause", onPause);
