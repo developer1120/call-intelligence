@@ -48,3 +48,28 @@ export async function POST(request: Request) {
     } | null;
     for (const u of body?.uploads ?? []) {
       if (!blobEnabled() || !isBlobUrl(u.url) || !AUDIO_EXT.test(u.filename)) {
+        errors.push(`${u.filename}: invalid upload`);
+        continue;
+      }
+      ids.push(await createCall({ filename: u.filename, storedKey: u.url, bytes: u.size, mime: mimeFor(u.filename) }));
+    }
+  }
+
+  if (!ids.length) {
+    return Response.json({ ids, errors: errors.length ? errors : ["No audio files received"] }, { status: 400 });
+  }
+  after(() => Promise.all(ids.map((id) => enqueue(id))));
+  return Response.json({ ids, errors }, { status: 202 });
+}
+
+/** Lightweight status poll: GET /api/calls?ids=a,b,c */
+export async function GET(request: Request) {
+  const ids = (new URL(request.url).searchParams.get("ids") ?? "").split(",").filter(Boolean).slice(0, 100);
+  if (!ids.length) return Response.json({ calls: [] });
+  const db = await getDb();
+  const rows = await db
+    .select({ id: schema.calls.id, label: schema.calls.label, status: schema.calls.status, error: schema.calls.error })
+    .from(schema.calls)
+    .where(inArray(schema.calls.id, ids));
+  return Response.json({ calls: rows }, { headers: { "cache-control": "no-store" } });
+}
