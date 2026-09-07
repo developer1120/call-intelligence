@@ -103,3 +103,38 @@ export async function transcribeAudio(audio: Buffer, mime: string, roster: strin
   const raw = (response.results.utterances ?? []).filter((u) => (u.transcript ?? "").trim().length > 0);
   const alt = response.results.channels?.[0]?.alternatives?.[0];
   const words = alt?.words ?? [];
+  const masking = maskPii();
+  const spans = masking
+    ? piiSpans(words, (alt as { entities?: DgEntity[] } | undefined)?.entities ?? [], new Set([...employeeNames(raw.map((u) => u.transcript ?? "")), ...roster.map((n) => n.toLowerCase())]))
+    : [];
+  const utterances: Utterance[] = redactReadback(
+    raw.map((u, i) => ({
+      i,
+      speaker: u.speaker ?? 0,
+      start: round(u.start ?? 0),
+      end: round(u.end ?? 0),
+      text: masking ? maskUtterance(u.words ?? [], (u.transcript ?? "").trim(), spans) : (u.transcript ?? "").trim(),
+      confidence: round(u.confidence ?? 0, 3),
+    })),
+  );
+
+  const confidence = words.length
+    ? words.reduce((s, w) => s + (w.confidence ?? 0), 0) / words.length
+    : 0;
+
+  return {
+    provider: "deepgram",
+    model: TRANSCRIPTION_MODEL,
+    durationSec: round(response.metadata?.duration ?? utterances.at(-1)?.end ?? 0),
+    speakers: [...new Set(utterances.map((u) => u.speaker))].sort((a, b) => a - b),
+    utterances,
+    confidence: round(confidence, 3),
+    redactions: masking ? ["pci", "contact_details"] : ["pci"],
+    speakerSource: "diarization",
+  };
+}
+
+function round(n: number, digits = 2) {
+  const f = 10 ** digits;
+  return Math.round(n * f) / f;
+}
