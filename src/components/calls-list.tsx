@@ -111,3 +111,60 @@ export function CallsList({ rows }: { rows: CallRowView[] }) {
     <Card>
       <div className="flex flex-wrap items-center gap-2 border-b border-hairline px-4 py-3">
         <div className="flex max-w-full gap-1 overflow-x-auto rounded-[11px] bg-sunken p-[3px]">
+          {VIEWS.map((v) => (
+            <button
+              key={v.id}
+              onClick={() => setParam("view", v.id === "all" ? null : v.id)}
+              className={cn(
+                "flex h-7 shrink-0 items-center gap-1.5 rounded-[8px] px-2.5 text-[12.5px] font-medium transition",
+                view === v.id ? "bg-surface text-ink shadow-sm" : "text-ink-3 hover:text-ink-2",
+              )}
+            >
+              {v.label}
+              <span className="tabular text-ink-4">{counts[v.id]}</span>
+            </button>
+          ))}
+        </div>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <label className="flex h-8 items-center gap-2 rounded-[9px] border border-hairline bg-surface px-2.5 text-[13px] focus-within:border-blue">
+            <Search className="size-3.5 text-ink-3" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search customer, rep, outcome…"
+              className="w-44 bg-transparent outline-none placeholder:text-ink-4"
+            />
+          </label>
+          <select
+            value={rep}
+            onChange={(e) => setParam("rep", e.target.value || null)}
+            className="h-8 rounded-[9px] border border-hairline bg-surface px-2 text-[13px] text-ink-2"
+            aria-label="Filter by rep"
+          >
+            <option value="">All reps</option>
+            {reps.map((r) => (
+              <option key={r}>{r}</option>
+            ))}
+          </select>
+          <select
+            value={sort}
+            onChange={(e) => setParam("sort", e.target.value)}
+            className="h-8 rounded-[9px] border border-hairline bg-surface px-2 text-[13px] text-ink-2"
+            aria-label="Sort"
+          >
+            {Object.entries(SORTS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState icon={<PhoneOff className="size-5" />} title={rows.length ? "No calls match" : "No calls yet"}>
+          {rows.length ? "Try a different filter or search." : "Upload call recordings to get transcripts, scores and coaching."}
+        </EmptyState>
+      ) : (
+        <>
+          <div className="hidden grid-cols-[minmax(0,1fr)_118px_150px_96px_150px_60px] gap-4 px-5 pt-3 pb-2 text-[11.5px] font-medium tracking-wide text-ink-4 uppercase lg:grid">

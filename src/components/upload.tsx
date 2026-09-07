@@ -93,3 +93,51 @@ function UploadDialog({ directUpload, onClose }: { directUpload: boolean; onClos
   const pendingIds = pending.map((i) => i.id).join(",");
   useEffect(() => {
     if (!pendingIds) return;
+    const timer = setInterval(async () => {
+      const res = await fetch(`/api/calls?ids=${pendingIds}`, { cache: "no-store" });
+      if (!res.ok) return;
+      const { calls } = (await res.json()) as { calls: { id: string; status: Stage; error: string | null }[] };
+      let finished = false;
+      setItems((list) =>
+        list.map((i) => {
+          const c = calls.find((x) => x.id === i.id);
+          if (!c || c.status === i.stage) return i;
+          if (c.status === "complete" || c.status === "failed") finished = true;
+          return { ...i, stage: c.status, error: c.error ?? undefined };
+        }),
+      );
+      if (finished) router.refresh();
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [pendingIds, router]);
+
+  const done = items.filter((i) => i.stage === "complete").length;
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/25 p-4 backdrop-blur-[2px]" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Upload call recordings"
+        className="w-full max-w-[560px] rounded-[20px] bg-surface shadow-[var(--shadow-pop)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 pt-5">
+          <div>
+            <h2 className="text-[17px] font-semibold">Process call recordings</h2>
+            <p className="mt-0.5 text-[13px] text-ink-3">
+              Each call is transcribed, classified, scored against your call standards and coached.
+            </p>
+          </div>
+          <button onClick={onClose} className="rounded-full p-1.5 text-ink-3 hover:bg-sunken" aria-label="Close">
+            <X className="size-4" />
+          </button>
+        </div>
+
+        <div className="p-5">
+          <button
+            type="button"
+            onClick={() => input.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
