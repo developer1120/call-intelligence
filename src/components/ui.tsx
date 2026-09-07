@@ -36,3 +36,41 @@ export function Card({ className, ...props }: ComponentProps<"div">) {
       {...props}
     />
   );
+}
+
+export function CardHeader({
+  title,
+  subtitle,
+  action,
+  icon,
+  className,
+}: {
+  title: ReactNode;
+  subtitle?: ReactNode;
+  action?: ReactNode;
+  icon?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex items-start justify-between gap-3 px-5 pt-4 pb-3", className)}>
+      <div className="flex min-w-0 items-center gap-2">
+        {icon}
+        <div className="min-w-0">
+          <h2 className="text-[15px] font-semibold text-ink">{title}</h2>
+          {subtitle && <p className="mt-0.5 text-[12.5px] text-ink-3">{subtitle}</p>}
+        </div>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+export function SectionTitle({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <h3 className={cn("text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3", className)}>{children}</h3>
+  );
+}
+
+type Tone = "neutral" | "blue" | "green" | "orange" | "red" | "gold" | "violet" | "muted";
+
+const TONES: Record<Tone, string> = {
