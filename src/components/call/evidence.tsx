@@ -26,3 +26,32 @@ export function EvidenceQuote({ e, className, tone = "neutral" }: { e: Evidence;
           "group-hover:bg-blue group-hover:text-white",
         )}
       >
+        <Play className="size-2.5 fill-current" />
+        {formatDuration(e.start)}
+      </span>
+      <span className="min-w-0 text-ink-2">
+        <span className="text-ink-4">{e.role === "rep" ? "Rep" : e.role === "customer" ? "Customer" : "Other"}: </span>“{e.quote}”
+        {!e.verified && (
+          <span className="ml-1 inline-flex items-center gap-0.5 text-orange-ink">
+            <TriangleAlert className="size-3" /> unverified
+          </span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+/** Compact timestamp link. */
+export function JumpTo({ e, label }: { e: Evidence; label?: string }) {
+  const { seek } = usePlayer();
+  return (
+    <button
+      type="button"
+      onClick={() => seek(e.start, e.u)}
+      className="inline-flex h-[20px] items-center gap-1 rounded-full bg-sunken px-1.5 text-[11px] font-semibold text-ink-2 tabular hover:bg-blue hover:text-white"
+    >
+      <Play className="size-2.5 fill-current" />
+      {label ?? formatDuration(e.start)}
+    </button>
+  );
+}
