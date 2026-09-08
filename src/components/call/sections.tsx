@@ -187,3 +187,97 @@ export function CoachingCard({ a }: { a: CallAnalysis }) {
               {c.strengths.map((s, i) => (
                 <li key={i} className="rounded-[14px] bg-green-soft/60 p-3.5">
                   <div className="flex items-center gap-1.5 text-[13.5px] font-semibold text-green-ink">
+                    <CircleCheck className="size-4" />
+                    {s.title}
+                  </div>
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-ink-2">{s.detail}</p>
+                  {s.evidence && <EvidenceQuote e={s.evidence} className="mt-2 bg-surface/80" tone="good" />}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+export function ScorecardCard({ a, callId }: { a: CallAnalysis; callId: string }) {
+  const sc = a.scorecard;
+  if (!sc) return null;
+  const quadrants = [...new Set(sc.items.map((i) => i.quadrant))];
+  return (
+    <Card>
+      <CardHeader
+        title="Scorecard"
+        subtitle={`${sc.name} · from the ${sc.source}. Click any quote to hear it.`}
+        action={
+          <span className={cn("rounded-full px-2.5 py-1 text-[13px] font-semibold tabular", GRADE_STYLE[sc.grade].bg, GRADE_STYLE[sc.grade].text)}>
+            {sc.score}/{sc.max}
+          </span>
+        }
+      />
+      <div className="space-y-5 px-5 pb-5">
+        {quadrants.map((q) => {
+          const items = sc.items.filter((i) => i.quadrant === q);
+          const got = items.filter((i) => i.credited).length;
+          return (
+            <section key={q}>
+              <div className="mb-1.5 flex items-center justify-between">
+                <SectionTitle>{q}</SectionTitle>
+                <span className="text-[12px] font-medium text-ink-3 tabular">
+                  {got}/{items.length}
+                </span>
+              </div>
+              <ul className="divide-y divide-hairline/70 rounded-[14px] border border-hairline">
+                {items.map((it) => (
+                  <ScoreItem key={it.id} it={it} callId={callId} />
+                ))}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function ScoreItem({ it, callId }: { it: ScoredItem; callId: string }) {
+  const Icon = it.status === "not_needed" && it.credited ? CircleMinus : it.credited ? CircleCheck : CircleX;
+  const color = it.status === "not_needed" && it.credited ? "text-ink-4" : it.credited ? "text-green" : "text-red";
+  return (
+    <li className="group px-3.5 py-3">
+      <div className="flex items-start gap-2.5">
+        <Icon className={cn("mt-0.5 size-[18px] shrink-0", color)} strokeWidth={2.2} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="text-[13.5px] font-semibold text-ink">{it.label}</span>
+              {it.status === "not_needed" && it.credited && <Badge tone="muted">Not needed · credited</Badge>}
+              {it.overridden && <Badge tone="blue">Manager adjusted</Badge>}
+            </div>
+            <ItemOverride callId={callId} itemId={it.id} credited={it.credited} overridden={it.overridden} />
+          </div>
+          {it.status === "not_needed" && it.credited ? (
+            <p className="mt-0.5 text-[13px] leading-relaxed text-ink-3">{it.creditNote}</p>
+          ) : (
+            <p className="mt-0.5 text-[13px] leading-relaxed text-ink-2">{it.reasoning}</p>
+          )}
+          {it.creditNote && !(it.status === "not_needed" && it.credited) && (
+            <p className="mt-1 text-[12px] leading-relaxed text-orange-ink">{it.creditNote}</p>
+          )}
+          {it.evidence.length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              {it.evidence.slice(0, 2).map((e, i) => (
+                <EvidenceQuote key={i} e={e} tone={it.credited ? "good" : "bad"} />
+              ))}
+            </div>
+          )}
+          <details className="mt-1.5">
+            <summary className="cursor-pointer text-[12px] text-ink-4 hover:text-ink-2">Standard &amp; example</summary>
+            <p className="mt-1 text-[12.5px] leading-relaxed text-ink-3">{it.standard}</p>
+            <p className="mt-1 text-[12.5px] leading-relaxed text-ink-3 italic">“{it.example}”</p>
+          </details>
+        </div>
+      </div>
+    </li>
