@@ -83,3 +83,32 @@ export function AssignButton({
         </button>
         <button
           onClick={() => setOpen((o) => !o)}
+          disabled={pending}
+          aria-label="Choose who to assign"
+          className={cn(
+            "rounded-r-[9px] border-l border-white/25 bg-blue px-1.5 text-white hover:bg-blue-ink",
+            size === "sm" ? "h-7" : "h-8",
+          )}
+        >
+          <ChevronDown className="size-3.5" />
+        </button>
+      </div>
+      {open && (
+        <div className="absolute right-0 z-30 mt-1.5 w-52 rounded-[12px] border border-hairline bg-surface p-1 shadow-[var(--shadow-pop)]">
+          <div className="px-2.5 pt-1.5 pb-1 text-[11px] font-medium text-ink-4 uppercase">Assign to</div>
+          {options.map((p) => (
+            <button
+              key={p}
+              onClick={() => assign(p)}
+              className="flex w-full items-center gap-2 rounded-[8px] px-2.5 py-1.5 text-left text-[13px] hover:bg-sunken"
+            >
+              <Avatar name={p} size={20} />
+              <span className="flex-1">{p}</span>
+              {p === payload.suggested && <span className="text-[11px] text-ink-4">Suggested</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
