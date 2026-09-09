@@ -42,3 +42,25 @@ CREATE TABLE "overrides" (
 	"call_id" text NOT NULL,
 	"field" text NOT NULL,
 	"value" text NOT NULL,
+	"note" text DEFAULT '' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "reps" (
+	"id" text PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	"role" text DEFAULT 'office' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "tasks" (
+	"id" text PRIMARY KEY NOT NULL,
+	"call_id" text,
+	"source_key" text NOT NULL,
+	"kind" text NOT NULL,
+	"title" text NOT NULL,
+	"detail" text DEFAULT '' NOT NULL,
+	"assignee" text NOT NULL,
+	"priority" text DEFAULT 'medium' NOT NULL,
+	"status" text DEFAULT 'open' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
