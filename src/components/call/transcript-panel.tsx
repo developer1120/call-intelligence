@@ -102,3 +102,56 @@ export function TranscriptPanel({
             <Scrubber time={time} total={total} markers={markers} onSeek={(t) => seek(t, undefined, playing)} />
             <div className="mt-1 flex justify-between text-[11px] text-ink-3 tabular">
               <span>{formatDuration(time)}</span>
+              <span>{formatDuration(total)}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setRate(rate === 1 ? 1.5 : rate === 1.5 ? 2 : 1)}
+            className="h-7 shrink-0 rounded-[8px] bg-sunken px-2 text-[12px] font-semibold text-ink-2 tabular hover:bg-black/[0.07]"
+            aria-label="Playback speed"
+          >
+            {rate}×
+          </button>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <label className="flex h-8 flex-1 items-center gap-2 rounded-[9px] bg-sunken px-2.5 text-[13px]">
+            <Search className="size-3.5 text-ink-3" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search transcript"
+              className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-ink-4"
+            />
+            {query && (
+              <button onClick={() => setQuery("")} aria-label="Clear search">
+                <X className="size-3.5 text-ink-3" />
+              </button>
+            )}
+          </label>
+          <button
+            onClick={() => setFollow((f) => !f)}
+            className={cn(
+              "h-8 shrink-0 rounded-[9px] px-2.5 text-[12px] font-medium",
+              follow ? "bg-blue-soft text-blue-ink" : "bg-sunken text-ink-3",
+            )}
+          >
+            Follow along
+          </button>
+        </div>
+        {q && <div className="mt-2 text-[12px] text-ink-3">{shown.length} matching lines</div>}
+      </div>
+
+      {/* Lines */}
+      <div ref={list} className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 py-3">
+        {shown.length === 0 && <div className="px-3 py-8 text-center text-[13px] text-ink-3">No speech found.</div>}
+        {shown.map((u) => {
+          const w = who.get(u.speaker) ?? { role: "other" as SpeakerRole, label: `Speaker ${u.speaker + 1}` };
+          const isActive = u.i === active;
+          const marks = marksByU.get(u.i);
+          return (
+            <button
+              key={u.i}
+              data-u={u.i}
+              onClick={() => seek(u.start, u.i)}
+              className={cn(
+                "group flex w-full gap-3 rounded-[12px] px-2.5 py-2 text-left transition-colors",
