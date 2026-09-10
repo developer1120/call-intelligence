@@ -141,3 +141,39 @@ export function CallActions({ callId, callType, typeOverridden }: { callId: stri
               if (!confirm("Delete this call, its transcript and analysis? This can't be undone.")) return;
               act("Deleting…", async () => {
                 await deleteCall(callId);
+                router.push("/calls");
+              });
+            }}
+            icon={<Trash2 className="size-3.5" />}
+          >
+            Delete call
+          </MenuItem>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Refreshes the page while a call is being processed. */
+export function AutoRefresh({ active }: { active: boolean }) {
+  const router = useRouter();
+  useEffect(() => {
+    if (!active) return;
+    const t = setInterval(() => router.refresh(), 2500);
+    return () => clearInterval(t);
+  }, [active, router]);
+  return null;
+}
+
+export function RetryCall({ callId }: { callId: string }) {
+  const [pending, start] = useTransition();
+  return (
+    <button
+      onClick={() => start(() => reprocessCall(callId))}
+      disabled={pending}
+      className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-blue px-3.5 text-[13.5px] font-medium text-white hover:bg-blue-ink disabled:opacity-60"
+    >
+      <RotateCw className={cn("size-4", pending && "animate-spin")} /> Try again
+    </button>
+  );
+}
