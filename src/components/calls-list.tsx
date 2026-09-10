@@ -168,3 +168,60 @@ export function CallsList({ rows }: { rows: CallRowView[] }) {
       ) : (
         <>
           <div className="hidden grid-cols-[minmax(0,1fr)_118px_150px_96px_150px_60px] gap-4 px-5 pt-3 pb-2 text-[11.5px] font-medium tracking-wide text-ink-4 uppercase lg:grid">
+            <span>Call</span>
+            <span>Type</span>
+            <span>Outcome</span>
+            <span>Score</span>
+            <span>Rep</span>
+            <span className="text-right">Length</span>
+          </div>
+          <ul className="divide-y divide-hairline/80">
+            {filtered.map((r) => (
+              <Row key={r.id} r={r} />
+            ))}
+          </ul>
+        </>
+      )}
+    </Card>
+  );
+}
+
+function Row({ r }: { r: CallRowView }) {
+  const ready = r.status === "complete";
+  const working = IN_PROGRESS.has(r.status) && !r.stalled;
+  const atStake = (r.money.direction === "lost" || r.money.direction === "at_risk") && r.money.value;
+  return (
+    <li className="group relative">
+      <Link
+        href={`/calls/${r.id}`}
+        className="grid gap-x-4 gap-y-2 px-5 py-3.5 transition-colors hover:bg-sunken/60 lg:grid-cols-[minmax(0,1fr)_118px_150px_96px_150px_60px] lg:items-center"
+      >
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[13.5px] font-semibold text-ink">{r.label}</span>
+            {r.customerName && <span className="truncate text-[13.5px] text-ink-2">· {r.customerName}</span>}
+            <Flags r={r} />
+          </div>
+          <div className="mt-0.5 truncate text-[12.5px] text-ink-3">
+            {ready ? (
+              <>
+                {r.headline}
+                {atStake ? (
+                  <span className="ml-1.5 font-medium text-red-ink">
+                    · {formatMoney(r.money.value)}
+                    {r.money.basis === "estimated" ? " est." : ""} at stake
+                  </span>
+                ) : null}
+              </>
+            ) : working ? (
+              <span className="inline-flex items-center gap-1.5 text-blue">
+                <Loader2 className="size-3 animate-spin" />
+                {r.status === "queued" ? "Waiting to process…" : r.status === "transcribing" ? "Transcribing…" : "Scoring & coaching…"}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-red-ink">
+                <CircleAlert className="size-3" />
+                {r.stalled ? "Processing stalled" : (r.error ?? "Processing failed")}
+              </span>
+            )}
+          </div>
