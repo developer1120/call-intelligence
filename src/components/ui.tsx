@@ -74,3 +74,41 @@ export function SectionTitle({ children, className }: { children: ReactNode; cla
 type Tone = "neutral" | "blue" | "green" | "orange" | "red" | "gold" | "violet" | "muted";
 
 const TONES: Record<Tone, string> = {
+  neutral: "bg-sunken text-ink-2",
+  muted: "bg-sunken text-ink-3",
+  blue: "bg-blue-soft text-blue-ink",
+  green: "bg-green-soft text-green-ink",
+  orange: "bg-orange-soft text-orange-ink",
+  red: "bg-red-soft text-red-ink",
+  gold: "bg-gold-soft text-gold-ink",
+  violet: "bg-violet-soft text-violet",
+};
+
+export function Badge({
+  tone = "neutral",
+  className,
+  children,
+  dot,
+}: {
+  tone?: Tone;
+  className?: string;
+  children: ReactNode;
+  dot?: boolean;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-[22px] shrink-0 items-center gap-1.5 rounded-full px-2 text-[12px] font-medium whitespace-nowrap",
+        TONES[tone],
+        className,
+      )}
+    >
+      {dot && <span className="size-1.5 rounded-full bg-current" />}
+      {children}
+    </span>
+  );
+}
+
+const BUTTON = {
+  primary: "bg-blue text-white hover:bg-blue-ink shadow-sm",
+  secondary: "bg-surface text-ink border border-hairline-strong hover:bg-sunken",
