@@ -141,3 +141,51 @@ function UploadDialog({ directUpload, onClose }: { directUpload: boolean; onClos
             onDragOver={(e) => {
               e.preventDefault();
               setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              const files = [...e.dataTransfer.files].filter((f) => f.type.startsWith("audio") || /\.(mp3|wav|m4a|mp4|ogg|webm|flac)$/i.test(f.name));
+              if (files.length) void start(files);
+            }}
+            className={cn(
+              "flex w-full flex-col items-center rounded-2xl border-[1.5px] border-dashed px-6 py-9 text-center transition-colors",
+              dragging ? "border-blue bg-blue-soft/60" : "border-hairline-strong bg-sunken/60 hover:bg-sunken",
+            )}
+          >
+            <div className="mb-2.5 grid size-11 place-items-center rounded-full bg-surface text-blue shadow-sm">
+              <AudioLines className="size-5" />
+            </div>
+            <div className="text-[14px] font-medium">Drop recordings here, or click to browse</div>
+            <div className="mt-0.5 text-[12.5px] text-ink-3">MP3, WAV, M4A · up to 60 MB each · select many at once</div>
+          </button>
+          <input
+            ref={input}
+            type="file"
+            accept={ACCEPT}
+            multiple
+            hidden
+            onChange={(e) => {
+              const files = [...(e.target.files ?? [])];
+              e.target.value = "";
+              if (files.length) void start(files);
+            }}
+          />
+
+          {items.length > 0 && (
+            <ul className="mt-4 max-h-[300px] space-y-1 overflow-y-auto">
+              {items.map((i) => (
+                <li key={i.key} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-sunken/70">
+                  <StageIcon stage={i.stage} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-[13.5px] font-medium">{i.name}</span>
+                      <span className={cn("shrink-0 text-[12px]", i.stage === "failed" ? "text-red-ink" : "text-ink-3")}>
+                        {STAGE_LABEL[i.stage]}
+                      </span>
+                    </div>
+                    {i.stage === "failed" ? (
+                      <div className="truncate text-[12px] text-red-ink">{i.error}</div>
+                    ) : (
+                      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-black/[0.06]">
