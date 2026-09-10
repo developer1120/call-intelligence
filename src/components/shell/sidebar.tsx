@@ -61,3 +61,34 @@ export function Sidebar({ company }: { company: string }) {
 /** Static render used as the Suspense fallback (no active item yet). */
 export function SidebarView({ company, pathname }: { company: string; pathname: string }) {
   return (
+    <>
+      <aside className="hidden w-[232px] shrink-0 flex-col border-r border-hairline bg-sidebar px-3 pt-4 pb-3 md:flex">
+        <div className="flex items-center gap-2.5 px-2 pb-4">
+          <div className="grid size-8 place-items-center rounded-[9px] bg-blue text-white shadow-sm">
+            <Bug className="size-[18px]" strokeWidth={2.2} />
+          </div>
+          <div className="leading-tight">
+            <div className="text-[13px] font-semibold text-ink">{company} OS</div>
+            <div className="text-[11px] text-ink-3">Powered by PestLaunch</div>
+          </div>
+        </div>
+
+        <div className="mb-3 flex items-center gap-2 rounded-[9px] border border-hairline bg-surface px-2.5 py-1.5 text-[13px] text-ink-3">
+          <Search className="size-3.5" />
+          <span className="flex-1">Search</span>
+          <kbd className="rounded border border-hairline px-1 text-[10px] text-ink-4">⌘K</kbd>
+        </div>
+
+        <SectionLabel>Call Intelligence</SectionLabel>
+        <nav className="space-y-0.5">
+          {MODULE.map((item) => {
+            const active = item.match ? item.match(pathname) : pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-2.5 rounded-[9px] px-2.5 py-[7px] text-[13.5px] transition-colors",
+                  active ? "bg-blue-soft font-medium text-blue-ink" : "text-ink-2 hover:bg-black/[0.04]",
+                )}
