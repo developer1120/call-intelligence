@@ -225,3 +225,60 @@ function Row({ r }: { r: CallRowView }) {
               </span>
             )}
           </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 lg:contents">
+          <div>{r.callType ? <CallTypeBadge type={r.callType} /> : <Badge tone="muted">—</Badge>}</div>
+          <div>{r.outcome ? <OutcomeBadge outcome={r.outcome} /> : null}</div>
+          <div>{ready ? <ScorePill value={r.score} /> : null}</div>
+          <div className="flex min-w-0 items-center gap-2">
+            {r.repName ? (
+              <>
+                <Avatar name={r.repName} size={22} />
+                <span className="truncate text-[13px] text-ink-2">{r.repName}</span>
+              </>
+            ) : ready ? (
+              <span className="text-[13px] text-ink-4">Unidentified</span>
+            ) : null}
+          </div>
+          <div className="tabular text-[13px] text-ink-3 lg:text-right">{formatDuration(r.durationSec)}</div>
+        </div>
+      </Link>
+      {(r.status === "failed" || r.stalled) && <RetryButton id={r.id} />}
+    </li>
+  );
+}
+
+function Flags({ r }: { r: CallRowView }) {
+  return (
+    <span className="flex shrink-0 items-center gap-1">
+      {r.highRisk && (
+        <span title="High-severity risk on this call" className="text-red">
+          <ShieldAlert className="size-3.5" />
+        </span>
+      )}
+      {r.followUps > 0 && (
+        <span title={`${r.followUps} promised follow-up${r.followUps > 1 ? "s" : ""}`} className="text-orange">
+          <Flag className="size-3.5" />
+        </span>
+      )}
+      {r.needsReview && (
+        <span title="AI result flagged for a quick human check" className="text-ink-4">
+          <ClipboardCheck className="size-3.5" />
+        </span>
+      )}
+    </span>
+  );
+}
+
+function RetryButton({ id }: { id: string }) {
+  const [pending, start] = useTransition();
+  return (
+    <button
+      onClick={() => start(() => reprocessCall(id))}
+      disabled={pending}
+      className="absolute top-3 right-4 inline-flex h-7 items-center gap-1 rounded-[8px] bg-surface px-2 text-[12px] font-medium text-blue shadow-sm ring-1 ring-hairline hover:bg-blue-soft"
+    >
+      <RotateCw className={cn("size-3", pending && "animate-spin")} /> Retry
+    </button>
+  );
+}
