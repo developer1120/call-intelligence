@@ -376,3 +376,98 @@ export function NextSteps({
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[13.5px] font-medium text-ink">{RISK_LABEL[r.type] ?? r.type}</span>
+                      <Badge tone={r.severity === "high" ? "red" : r.severity === "medium" ? "orange" : "muted"}>{r.severity}</Badge>
+                    </div>
+                    <p className="mt-0.5 text-[13px] text-ink-2">{r.description}</p>
+                    <EvidenceQuote e={r.evidence} className="mt-2 bg-surface/80" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {a.opportunities.length > 0 && (
+          <section>
+            <SectionTitle className="mb-2">Opportunities</SectionTitle>
+            <ul className="grid gap-2 md:grid-cols-2">
+              {a.opportunities.map((o, i) => (
+                <li key={i} className={cn("rounded-[12px] p-3", o.captured ? "bg-green-soft/50" : "bg-sunken")}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink">
+                      <Lightbulb className={cn("size-3.5", o.captured ? "text-green" : "text-orange")} />
+                      {OPP_LABEL[o.type] ?? o.type}
+                    </span>
+                    <Badge tone={o.captured ? "green" : "orange"}>{o.captured ? "Captured" : "Missed"}</Badge>
+                  </div>
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-ink-2">{o.description}</p>
+                  {o.evidence && <div className="mt-1.5"><JumpTo e={o.evidence} /></div>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {a.objections.length > 0 && (
+          <section>
+            <SectionTitle className="mb-2">Objections</SectionTitle>
+            <ul className="space-y-2">
+              {a.objections.map((o, i) => (
+                <li key={i} className="rounded-[12px] border border-hairline p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[13.5px] font-medium text-ink capitalize">{o.type.replaceAll("_", " ")}</span>
+                    <Badge tone={o.handling === "resolved" ? "green" : o.handling === "partially" ? "orange" : "red"}>
+                      {o.handling === "resolved" ? "Handled" : o.handling === "partially" ? "Partly handled" : "Not addressed"}
+                    </Badge>
+                  </div>
+                  <p className="mt-0.5 text-[13px] text-ink-2">{o.summary}</p>
+                  <EvidenceQuote e={o.evidence} className="mt-2" />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+export function DetailsCard({ a }: { a: CallAnalysis }) {
+  const d = a.details;
+  const p = d.pricing;
+  const price = [
+    p.anchorPrice != null && `Anchor ${formatMoney(p.anchorPrice)}`,
+    p.initialPrice != null && `Initial ${formatMoney(p.initialPrice)}`,
+    p.recurringPrice != null && `${formatMoney(p.recurringPrice)} ${p.recurringFrequency ?? ""}`.trim(),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const rows: [string, string | null][] = [
+    ["Customer", a.customerName],
+    ["Rep", a.repName],
+    ["Company", a.companyName],
+    ["Pests", d.pests.length ? d.pests.join(", ") : null],
+    ["Service", d.serviceDiscussed],
+    ["Property", d.property],
+    ["Appointment", d.appointment],
+    ["Pricing", price || p.notes],
+    ["Cancel reason", d.cancellationReason],
+    ["Save offer", d.saveOffer],
+    ["Competitor", d.competitor],
+    ["Direction", a.direction === "unknown" ? null : a.direction === "inbound" ? "Inbound" : "Outbound"],
+  ];
+  const shown = rows.filter(([, v]) => v);
+  return (
+    <Card>
+      <CardHeader title="Call details" subtitle="Extracted from the conversation" />
+      <dl className="grid grid-cols-1 gap-x-6 px-5 pb-5 sm:grid-cols-2">
+        {shown.map(([k, v]) => (
+          <div key={k} className="border-t border-hairline/70 py-2.5">
+            <dt className="text-[11.5px] font-medium text-ink-4 uppercase tracking-wide">{k}</dt>
+            <dd className="mt-0.5 text-[13.5px] text-ink">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </Card>
+  );
+}
