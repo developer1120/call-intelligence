@@ -281,3 +281,98 @@ function ScoreItem({ it, callId }: { it: ScoredItem; callId: string }) {
         </div>
       </div>
     </li>
+  );
+}
+
+const RISK_LABEL: Record<string, string> = {
+  churn: "Churn risk",
+  complaint: "Complaint",
+  technician_issue: "Technician issue",
+  billing_dispute: "Billing dispute",
+  damage_claim: "Damage claim",
+  safety_concern: "Safety concern",
+  bad_review_threat: "Bad review threat",
+  escalation: "Escalation",
+};
+const OPP_LABEL: Record<string, string> = {
+  upsell: "Upsell",
+  cross_sell: "Add-on service",
+  referral: "Referral",
+  review: "Review request",
+  booking: "Booking",
+  save: "Save",
+  prepay: "Annual prepay",
+};
+
+export function NextSteps({
+  a,
+  callId,
+  callLabel,
+  tasks,
+  people,
+}: {
+  a: CallAnalysis;
+  callId: string;
+  callLabel: string;
+  tasks: TaskRow[];
+  people: string[];
+}) {
+  const followUps = a.followUps;
+  const hasAny = followUps.length || a.risks.length || a.opportunities.length || a.objections.length;
+  if (!hasAny) return null;
+  const taskFor = (key: string) => tasks.find((t) => t.sourceKey === key) ?? null;
+  const rep = a.repName ?? "Office team";
+  return (
+    <Card>
+      <CardHeader title="Follow-ups & signals" subtitle="Promises made, risks and opportunities on this call" />
+      <div className="space-y-5 px-5 pb-5">
+        {followUps.length > 0 && (
+          <section>
+            <SectionTitle className="mb-2">Promised follow-ups</SectionTitle>
+            <ul className="space-y-2">
+              {followUps.map((f, i) => {
+                const key = `promise:${callId}:${a.followUps.filter((x) => x.owner === "company").indexOf(f)}`;
+                return (
+                  <li key={i} className="flex items-start gap-3 rounded-[12px] border border-hairline p-3">
+                    <Flag className={cn("mt-0.5 size-4 shrink-0", f.owner === "company" ? "text-orange" : "text-ink-4")} />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13.5px] font-medium text-ink">{f.action}</div>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[12px] text-ink-3">
+                        <span>{f.owner === "company" ? "Company owes this" : "Customer will do this"}</span>
+                        {f.due && <span>· {f.due}</span>}
+                        <JumpTo e={f.evidence} />
+                      </div>
+                    </div>
+                    {f.owner === "company" && (
+                      <AssignButton
+                        size="sm"
+                        people={people}
+                        task={taskFor(key)}
+                        payload={{
+                          sourceKey: key,
+                          kind: "promise",
+                          title: f.action,
+                          detail: `Promised on ${callLabel}${f.due ? ` · due ${f.due}` : ""}`,
+                          priority: "medium",
+                          callId,
+                          suggested: rep,
+                        }}
+                      />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {a.risks.length > 0 && (
+          <section>
+            <SectionTitle className="mb-2">Risks</SectionTitle>
+            <ul className="space-y-2">
+              {a.risks.map((r, i) => (
+                <li key={i} className="flex items-start gap-3 rounded-[12px] bg-red-soft/50 p-3">
+                  <ShieldAlert className={cn("mt-0.5 size-4 shrink-0", r.severity === "high" ? "text-red" : "text-orange")} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[13.5px] font-medium text-ink">{RISK_LABEL[r.type] ?? r.type}</span>

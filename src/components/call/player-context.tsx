@@ -47,3 +47,28 @@ export function PlayerProvider({ src, initialDuration, children }: { src: string
       a.removeEventListener("timeupdate", onTime);
       a.removeEventListener("play", onPlay);
       a.removeEventListener("pause", onPause);
+      a.removeEventListener("loadedmetadata", onMeta);
+    };
+  }, []);
+
+  const seek = useCallback((sec: number, u?: number, play = true) => {
+    const a = audioRef.current;
+    if (a) {
+      a.currentTime = Math.max(0, sec - 0.3);
+      setTime(a.currentTime);
+      if (play) void a.play().catch(() => {});
+    }
+    if (u !== undefined) setFocus((f) => ({ u, n: f.n + 1 }));
+  }, []);
+
+  const toggle = useCallback(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (a.paused) void a.play().catch(() => {});
+    else a.pause();
+  }, []);
+
+  const setRate = useCallback((r: number) => {
+    if (audioRef.current) audioRef.current.playbackRate = r;
+    setRateState(r);
+  }, []);

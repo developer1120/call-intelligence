@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+/*
+ * PestLaunch OS visual language: Apple-style light UI, grey app canvas, white rounded
+ * cards, system blue for actions, semantic red/orange/green for metrics.
+ */
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-inter), "Segoe UI", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+
+  --color-canvas: #f2f2f5;
+  --color-sidebar: #f7f7f9;
+  --color-surface: #ffffff;
+  --color-sunken: #f5f5f7;
+  --color-hairline: #e6e6eb;
+  --color-hairline-strong: #d8d8de;
+
+  --color-ink: #1d1d1f;
+  --color-ink-2: #515154;
+  --color-ink-3: #86868b;
+  --color-ink-4: #aeaeb2;
+
+  --color-blue: #0a7aff;
