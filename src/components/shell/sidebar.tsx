@@ -92,3 +92,35 @@ export function SidebarView({ company, pathname }: { company: string; pathname: 
                   "flex items-center gap-2.5 rounded-[9px] px-2.5 py-[7px] text-[13.5px] transition-colors",
                   active ? "bg-blue-soft font-medium text-blue-ink" : "text-ink-2 hover:bg-black/[0.04]",
                 )}
+              >
+                <Icon className="size-4" strokeWidth={active ? 2.2 : 1.8} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <SectionLabel className="mt-5">PestLaunch OS</SectionLabel>
+        <div className="space-y-0.5">
+          {OS.map(({ label, icon: Icon }) => (
+            <div
+              key={label}
+              title="Part of PestLaunch OS — not included in this build"
+              className="flex cursor-default items-center gap-2.5 rounded-[9px] px-2.5 py-[7px] text-[13.5px] text-ink-4"
+            >
+              <Icon className="size-4" strokeWidth={1.8} />
+              {label}
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-auto space-y-0.5 border-t border-hairline pt-3">
+          {FOOTER.map(({ label, icon: Icon }) => (
+            <div key={label} className="flex cursor-default items-center gap-2.5 rounded-[9px] px-2.5 py-[6px] text-[13px] text-ink-4">
+              <Icon className="size-4" strokeWidth={1.8} />
+              {label}
+            </div>
+          ))}
+        </div>
+      </aside>
+
