@@ -19,3 +19,25 @@ export default function CallsPage() {
         actions={<UploadButton directUpload={blobEnabled()} />}
       />
       <Suspense fallback={<ListSkeleton />}>
+        <CallsData />
+      </Suspense>
+    </Page>
+  );
+}
+
+async function CallsData() {
+  await connection();
+  const rows = (await listCalls()).map(toRowView);
+  return <CallsList rows={rows} />;
+}
+
+function ListSkeleton() {
+  return (
+    <Card className="p-4">
+      <Skeleton className="mb-4 h-8 w-80" />
+      {Array.from({ length: 8 }, (_, i) => (
+        <Skeleton key={i} className="mb-2 h-12 w-full" />
+      ))}
+    </Card>
+  );
+}
