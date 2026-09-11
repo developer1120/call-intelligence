@@ -112,3 +112,41 @@ export function Badge({
 const BUTTON = {
   primary: "bg-blue text-white hover:bg-blue-ink shadow-sm",
   secondary: "bg-surface text-ink border border-hairline-strong hover:bg-sunken",
+  ghost: "text-ink-2 hover:bg-black/[0.05]",
+  soft: "bg-blue-soft text-blue-ink hover:bg-[#dbe9ff]",
+} as const;
+
+export function buttonClass(variant: keyof typeof BUTTON = "secondary", size: "sm" | "md" = "md") {
+  return cn(
+    "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-[10px] font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
+    size === "sm" ? "h-7 px-2.5 text-[12.5px]" : "h-9 px-3.5 text-[13.5px]",
+    BUTTON[variant],
+  );
+}
+
+export function Button({
+  variant = "secondary",
+  size = "md",
+  className,
+  ...props
+}: ComponentProps<"button"> & { variant?: keyof typeof BUTTON; size?: "sm" | "md" }) {
+  return <button className={cn(buttonClass(variant, size), className)} {...props} />;
+}
+
+export function ButtonLink({
+  variant = "secondary",
+  size = "md",
+  className,
+  ...props
+}: ComponentProps<typeof Link> & { variant?: keyof typeof BUTTON; size?: "sm" | "md" }) {
+  return <Link className={cn(buttonClass(variant, size), className)} {...props} />;
+}
+
+const AVATAR_COLORS = ["#0a7aff", "#7c5cff", "#ff9f0a", "#30b0c7", "#ff375f", "#34c759", "#5e5ce6", "#a2845e"];
+
+export function Avatar({ name, size = 28, className }: { name: string | null | undefined; size?: number; className?: string }) {
+  const hash = [...(name ?? "?")].reduce((h, ch) => h + ch.charCodeAt(0), 0);
+  return (
+    <span
+      className={cn("inline-grid shrink-0 place-items-center rounded-full font-semibold text-white", className)}
+      style={{

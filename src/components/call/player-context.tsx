@@ -72,3 +72,28 @@ export function PlayerProvider({ src, initialDuration, children }: { src: string
     if (audioRef.current) audioRef.current.playbackRate = r;
     setRateState(r);
   }, []);
+
+  // Space toggles playback when not typing.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (e.code !== "Space" || /input|textarea|select|button/i.test(el.tagName) || el.isContentEditable) return;
+      e.preventDefault();
+      toggle();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [toggle]);
+
+  const value = useMemo(
+    () => ({ audioRef, time, playing, duration, focusU: focus.u, focusNonce: focus.n, seek, toggle, rate, setRate }),
+    [time, playing, duration, focus, seek, toggle, rate, setRate],
+  );
+
+  return (
+    <Ctx.Provider value={value}>
+      <audio ref={audioRef} src={src} preload="metadata" />
+      {children}
+    </Ctx.Provider>
+  );
+}
