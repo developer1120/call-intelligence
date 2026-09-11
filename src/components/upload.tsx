@@ -189,3 +189,51 @@ function UploadDialog({ directUpload, onClose }: { directUpload: boolean; onClos
                       <div className="truncate text-[12px] text-red-ink">{i.error}</div>
                     ) : (
                       <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-black/[0.06]">
+                        <div
+                          className={cn("h-full rounded-full transition-all duration-700", i.stage === "complete" ? "bg-green" : "bg-blue")}
+                          style={{ width: `${STAGE_PROGRESS[i.stage] * 100}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {i.stage === "complete" && i.id && (
+                    <a href={`/calls/${i.id}`} className="shrink-0 text-[12.5px] font-medium text-blue">
+                      View
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between border-t border-hairline px-5 py-3.5">
+          <span className="text-[12.5px] text-ink-3">
+            {items.length ? `${done} of ${items.length} processed · you can close this, processing continues` : "Card numbers are redacted from transcripts automatically."}
+          </span>
+          <Button onClick={onClose}>{items.length ? "Close" : "Cancel"}</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StageIcon({ stage }: { stage: Stage }) {
+  if (stage === "complete")
+    return (
+      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-green-soft text-green-ink">
+        <Check className="size-4" />
+      </span>
+    );
+  if (stage === "failed")
+    return (
+      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-red-soft text-red-ink">
+        <CircleAlert className="size-4" />
+      </span>
+    );
+  return (
+    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-blue-soft text-blue">
+      <Loader2 className="size-4 animate-spin" />
+    </span>
+  );
+}
