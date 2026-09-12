@@ -67,3 +67,37 @@ if (byRun.length > 1) {
       spreadMax = Math.max(spreadMax, spread);
       for (const item of as[0].scorecard!.items) {
         itemTotal++;
+        itemAgree += +as.every((a) => a.scorecard!.items.find((i) => i.id === item.id)?.credited === item.credited);
+      }
+    }
+  }
+}
+
+const report = `# Analysis evaluation
+
+Runs: ${runs.join(", ")} · ${ids.length} calls · ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC
+
+## Accuracy vs. hand labels
+| Metric | Result |
+|---|---|
+| Call type | ${pct(typeOk, total)} (${typeOk}/${total}) |
+| Outcome | ${pct(outcomeOk, total)} (${outcomeOk}/${total}) |
+| Rep identified | ${pct(repOk, total)} (${repOk}/${total}) |
+| Cited quotes found in transcript | ${pct(verified, quotes)} (${verified}/${quotes}) |
+${byRun.length > 1 ? `
+## Consistency across ${byRun.length} runs
+| Metric | Result |
+|---|---|
+| Same call type every run | ${pct(typeAgree, ids.length)} |
+| Same outcome every run | ${pct(outcomeAgree, ids.length)} |
+| Same credit on each scorecard step | ${pct(itemAgree, itemTotal)} (${itemAgree}/${itemTotal} steps) |
+| Score spread between runs | avg ${(spreadSum / Math.max(1, graded)).toFixed(2)} pts, max ${spreadMax} pts |
+` : ""}
+## Disagreements
+${misses.length ? misses.join("\n") : "None."}
+
+## Per call (first run)
+| Call | Type | Outcome | Rep | Score per run | Quotes verified |
+|---|---|---|---|---|---|
+${rows.join("\n")}
+`;

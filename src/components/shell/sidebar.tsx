@@ -124,3 +124,35 @@ export function SidebarView({ company, pathname }: { company: string; pathname: 
         </div>
       </aside>
 
+      {/* Phone / small tablet: compact top bar */}
+      <div className="fixed inset-x-0 bottom-0 z-40 flex border-t border-hairline bg-surface/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+        {MODULE.map((item) => {
+          const active = item.match ? item.match(pathname) : pathname === item.href;
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px]",
+                active ? "text-blue" : "text-ink-3",
+              )}
+            >
+              <Icon className="size-5" strokeWidth={active ? 2.2 : 1.8} />
+              {item.short ?? item.label}
+            </Link>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn("px-2.5 pb-1.5 text-[11px] font-medium uppercase tracking-[0.06em] text-ink-4", className)}>
+      {children}
+    </div>
+  );
+}
+

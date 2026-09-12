@@ -76,3 +76,42 @@ async function CallDetail({ params }: { params: Promise<{ id: string }> }) {
           {working ? (
             <>
               <Loader2 className="size-7 animate-spin text-blue" />
+              <div className="mt-4 text-[16px] font-semibold">
+                {call.status === "queued" ? "Waiting to start…" : call.status === "transcribing" ? "Transcribing the recording…" : "Scoring the call and writing coaching…"}
+              </div>
+              <p className="mt-1 max-w-sm text-[13.5px] text-ink-3">
+                Usually under two minutes. This page updates by itself.
+              </p>
+              <Steps status={call.status} />
+            </>
+          ) : (
+            <>
+              <CircleAlert className="size-7 text-red" />
+              <div className="mt-4 text-[16px] font-semibold">{d.stalled ? "Processing stalled" : "We couldn't process this call"}</div>
+              <p className="mt-1 max-w-md text-[13.5px] text-ink-3">{call.error ?? "The job stopped before finishing."}</p>
+              <div className="mt-5">
+                <RetryCall callId={call.id} />
+              </div>
+            </>
+          )}
+        </Card>
+      </Page>
+    );
+  }
+
+  const markers = buildMarkers(a);
+
+  return (
+    <PlayerProvider src={`/api/calls/${call.id}/audio`} initialDuration={call.durationSec ?? 0}>
+      <AutoRefresh active={working} />
+      <Page className="max-w-[1400px]">
+        {header}
+        {working && (
+          <div className="mb-4 flex items-center gap-2 rounded-[12px] bg-blue-soft px-4 py-2.5 text-[13px] text-blue-ink">
+            <Loader2 className="size-4 animate-spin" /> Re-analyzing… the results below will update when it finishes.
+          </div>
+        )}
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="min-w-0 space-y-5">
+            <Hero a={a} />
+            <TrustBar a={a} typeOverridden={typeOverridden} />

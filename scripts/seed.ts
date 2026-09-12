@@ -42,3 +42,26 @@ for (const file of recordings(args.filter((a) => !a.startsWith("--")))) {
       continue;
     }
     if (remote) {
+      const blob = await uploadPresigned(`calls/${file.replace(/\s+/g, "-")}`, new Blob([new Uint8Array(bytes)], { type: "audio/mpeg" }), {
+        access: "private",
+        contentType: "audio/mpeg",
+        handleUploadUrl: `${base}/api/blob-upload`,
+      });
+      res = await fetch(`${base}/api/admin/import`, {
+        method: "POST",
+        headers: { ...headers, "content-type": "application/json" },
+        body: JSON.stringify({ filename: file, audioUrl: blob.url, bytes: bytes.length, transcript, analysis }),
+      });
+    } else {
+      const form = new FormData();
+      form.append("file", new File([bytes], file, { type: "audio/mpeg" }));
+      form.append("transcript", JSON.stringify(transcript));
+      form.append("analysis", JSON.stringify(analysis));
+      res = await fetch(`${base}/api/admin/import`, { method: "POST", body: form, headers });
+    }
+  }
+  const body = await res.text();
+  console.log(`${id}  ${res.status}  ${body.slice(0, 120)}`);
+  if (res.ok) ok++;
+}
+console.log(`${ok} calls sent to ${base}${live ? " for processing" : ""}`);
