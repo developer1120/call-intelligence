@@ -20,3 +20,25 @@ const remote = !/localhost|127\.0\.0\.1/.test(base);
 const headers: Record<string, string> = process.env.ADMIN_TOKEN ? { "x-admin-token": process.env.ADMIN_TOKEN } : {};
 
 if (remote && !live && !process.env.ADMIN_TOKEN) {
+  console.error("Seeding a deployed app needs ADMIN_TOKEN in .env.local (the same value as on the deployment)");
+  process.exit(1);
+}
+
+let ok = 0;
+for (const file of recordings(args.filter((a) => !a.startsWith("--")))) {
+  const id = callIdFromFile(file);
+  const bytes = fs.readFileSync(path.join(RECORDINGS, file));
+  let res: Response;
+
+  if (live) {
+    const form = new FormData();
+    form.append("files", new File([bytes], file, { type: "audio/mpeg" }));
+    res = await fetch(`${base}/api/calls`, { method: "POST", body: form, headers });
+  } else {
+    const transcript = readJson(path.join(CACHE, "transcripts", `${id}.json`));
+    const analysis = readJson(path.join(CACHE, "analyses", run, `${id}.json`));
+    if (!transcript || !analysis) {
+      console.log(`${id}  skipped (no cached transcript/analysis for run ${run})`);
+      continue;
+    }
+    if (remote) {
