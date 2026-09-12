@@ -27,3 +27,33 @@ export default function TeamPage() {
 
 async function Team() {
   await connection();
+  const calls = await completedCalls();
+  const team = buildTeam(calls);
+  if (!team.length) {
+    return (
+      <Card>
+        <EmptyState icon={<Users className="size-5" />} title="No graded calls yet">
+          Once calls are processed, each rep&apos;s scores and coaching plan show up here.
+        </EmptyState>
+      </Card>
+    );
+  }
+
+  // Team-wide weakest steps, with the best coaching line written for each.
+  const gaps = (["service", "sales", "retention"] as const)
+    .flatMap((id) => stepRates(calls, id).map((s) => ({ ...s, card: id })))
+    .filter((s) => s.of >= 2 && s.met < s.of)
+    .sort((a, b) => a.met / a.of - b.met / b.of)
+    .slice(0, 3)
+    .map((g) => {
+      const line = calls
+        .flatMap((c) => (c.analysis.coaching?.improvements ?? []).map((i) => ({ ...i, callId: c.call.id, label: c.call.label })))
+        .find((i) => i.itemId === g.itemId);
+      return { ...g, line };
+    });
+
+  return (
+    <div className="space-y-5">
+      <Card>
+        <div className="hidden grid-cols-[minmax(0,1.3fr)_70px_90px_150px_110px_minmax(0,1.2fr)_120px_20px] gap-4 border-b border-hairline px-5 py-2.5 text-[11.5px] font-medium tracking-wide text-ink-4 uppercase lg:grid">
+          <span>Rep</span>

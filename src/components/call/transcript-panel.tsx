@@ -155,3 +155,55 @@ export function TranscriptPanel({
               onClick={() => seek(u.start, u.i)}
               className={cn(
                 "group flex w-full gap-3 rounded-[12px] px-2.5 py-2 text-left transition-colors",
+                isActive ? "bg-blue-soft/70" : "hover:bg-sunken",
+                flash === u.i && "ring-2 ring-blue/60 ring-offset-1",
+              )}
+            >
+              <div className="w-[42px] shrink-0 pt-[2px] text-[11px] text-ink-4 tabular group-hover:text-blue">
+                {formatDuration(u.start)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={cn(
+                      "text-[11.5px] font-semibold",
+                      w.role === "rep" ? "text-blue-ink" : w.role === "customer" ? "text-ink-2" : "text-ink-4",
+                    )}
+                  >
+                    {w.label}
+                    {w.role === "rep" && w.label !== "Rep" ? <span className="font-normal text-ink-4"> · Rep</span> : null}
+                  </span>
+                  {marks?.map((m, i) => (
+                    <span key={i} title={m.label} className={cn("size-1.5 rounded-full", MARK_COLOR[m.kind])} />
+                  ))}
+                </div>
+                <p className={cn("mt-0.5 text-[13.5px] leading-relaxed", w.role === "rep" ? "text-ink" : "text-ink-2")}>
+                  {q ? highlight(u.text, q) : u.text}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Scrubber({
+  time,
+  total,
+  markers,
+  onSeek,
+}: {
+  time: number;
+  total: number;
+  markers: Marker[];
+  onSeek: (t: number) => void;
+}) {
+  const bar = useRef<HTMLDivElement>(null);
+  const at = (clientX: number) => {
+    const r = bar.current!.getBoundingClientRect();
+    return Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * total;
+  };
+  return (
+    <div
