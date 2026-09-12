@@ -19,3 +19,24 @@ export async function assignTask(input: {
   title: string;
   detail: string;
   assignee: string;
+  priority: "high" | "medium" | "low";
+  callId: string | null;
+}) {
+  const db = await getDb();
+  await db
+    .insert(tasks)
+    .values({ id: newId(), ...input, assignee: input.assignee.trim() || "Unassigned" })
+    .onConflictDoUpdate({ target: tasks.sourceKey, set: { assignee: input.assignee, status: "open", completedAt: null } });
+  refreshAll();
+}
+
+export async function setTaskStatus(taskId: string, done: boolean) {
+  const db = await getDb();
+  await db
+    .update(tasks)
+    .set({ status: done ? "done" : "open", completedAt: done ? new Date() : null })
+    .where(eq(tasks.id, taskId));
+  refreshAll();
+}
+
+export async function deleteTask(taskId: string) {
