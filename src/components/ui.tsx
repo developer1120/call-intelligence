@@ -150,3 +150,42 @@ export function Avatar({ name, size = 28, className }: { name: string | null | u
     <span
       className={cn("inline-grid shrink-0 place-items-center rounded-full font-semibold text-white", className)}
       style={{
+        width: size,
+        height: size,
+        fontSize: Math.round(size * 0.38),
+        background: name ? AVATAR_COLORS[hash % AVATAR_COLORS.length] : "#c7c7cc",
+      }}
+    >
+      {initials(name)}
+    </span>
+  );
+}
+
+export function Skeleton({ className }: { className?: string }) {
+  return <div className={cn("animate-pulse-soft rounded-lg bg-black/[0.06]", className)} />;
+}
+
+export function EmptyState({
+  icon,
+  title,
+  children,
+  action,
+}: {
+  icon?: ReactNode;
+  title: string;
+  children?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center px-6 py-14 text-center">
+      {icon && <div className="mb-3 grid size-12 place-items-center rounded-2xl bg-sunken text-ink-3">{icon}</div>}
+      <div className="text-[15px] font-semibold text-ink">{title}</div>
+      {children && <div className="mt-1 max-w-sm text-[13.5px] text-ink-3">{children}</div>}
+      {action && <div className="mt-4">{action}</div>}
+    </div>
+  );
+}
+
+export function Divider({ className }: { className?: string }) {
+  return <div className={cn("h-px bg-hairline", className)} />;
+}
