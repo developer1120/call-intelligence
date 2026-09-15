@@ -57,3 +57,33 @@ async function Team() {
       <Card>
         <div className="hidden grid-cols-[minmax(0,1.3fr)_70px_90px_150px_110px_minmax(0,1.2fr)_120px_20px] gap-4 border-b border-hairline px-5 py-2.5 text-[11.5px] font-medium tracking-wide text-ink-4 uppercase lg:grid">
           <span>Rep</span>
+          <span>Calls</span>
+          <span>Score</span>
+          <span>Gold · Green · Below</span>
+          <span>Sales / saves</span>
+          <span>Work on next</span>
+          <span>Recent calls</span>
+          <span />
+        </div>
+        <ul className="divide-y divide-hairline/80">
+          {team.map((r, idx) => (
+            <li key={r.id}>
+              <Link
+                href={`/team/${r.id}`}
+                className="grid items-center gap-x-4 gap-y-2 px-5 py-3.5 hover:bg-sunken/60 lg:grid-cols-[minmax(0,1.3fr)_70px_90px_150px_110px_minmax(0,1.2fr)_120px_20px]"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="w-4 text-[12px] text-ink-4 tabular">{idx + 1}</span>
+                  <Avatar name={r.name === "Unidentified" ? null : r.name} size={32} />
+                  <div className="min-w-0">
+                    <div className="truncate text-[14px] font-semibold">{r.name}</div>
+                    <div className="text-[12px] text-ink-3 capitalize">{r.id === "unidentified" ? "Name not said on call" : r.role}</div>
+                  </div>
+                </div>
+                <div className="text-[13.5px] text-ink-2 tabular">{r.calls}</div>
+                <div className={cn("text-[17px] font-semibold tabular", pctTone(r.avgPct))}>{formatPct(r.avgPct)}</div>
+                <div className="flex gap-1.5 text-[12px] font-medium tabular">
+                  <span className="rounded-full bg-gold-soft px-1.5 py-0.5 text-gold-ink">{r.grades.gold} Gold</span>
+                  <span className="rounded-full bg-green-soft px-1.5 py-0.5 text-green-ink">{r.grades.green}</span>
+                  <span className="rounded-full bg-red-soft px-1.5 py-0.5 text-red-ink">{r.grades.below}</span>
+                </div>
