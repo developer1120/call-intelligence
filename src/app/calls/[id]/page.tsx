@@ -154,3 +154,43 @@ function buildMarkers(a: CallAnalysis): Marker[] {
   return out;
 }
 
+function Steps({ status }: { status: string }) {
+  const steps = [
+    { id: "transcribing", label: "Transcribe" },
+    { id: "analyzing", label: "Classify, score & coach" },
+  ];
+  const at = steps.findIndex((s) => s.id === status);
+  return (
+    <ol className="mt-6 flex items-center gap-3 text-[12.5px]">
+      {steps.map((s, i) => (
+        <li key={s.id} className="flex items-center gap-2">
+          <span
+            className={
+              i < at ? "grid size-5 place-items-center rounded-full bg-green text-white" : i === at ? "grid size-5 place-items-center rounded-full bg-blue text-white" : "grid size-5 place-items-center rounded-full bg-sunken text-ink-3"
+            }
+          >
+            {i + 1}
+          </span>
+          <span className={i === at ? "font-medium text-ink" : "text-ink-3"}>{s.label}</span>
+          {i < steps.length - 1 && <span className="h-px w-8 bg-hairline-strong" />}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <Page className="max-w-[1400px]">
+      <Skeleton className="mb-3 h-4 w-16" />
+      <Skeleton className="mb-6 h-8 w-72" />
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="space-y-5">
+          <Skeleton className="h-48 w-full rounded-2xl" />
+          <Skeleton className="h-80 w-full rounded-2xl" />
+        </div>
+        <Skeleton className="hidden h-[70vh] rounded-2xl lg:block" />
+      </div>
+    </Page>
+  );
+}
