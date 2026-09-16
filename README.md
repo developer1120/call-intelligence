@@ -51,3 +51,29 @@ upload ─▶ Deepgram Nova-3 ─▶ mask contact details ─▶ (speaker repair
 * **Measured:** `data/eval/labels.json` holds hand labels for all 20 sample calls (written by reading
   every transcript). `npm run eval` reports accuracy and run-to-run consistency (`data/eval/report.md`,
   also shown in the app under **How scoring works**). Latest, two full runs on `gemini-3.5-flash-lite`:
+
+  | Call type | Outcome | Rep | Quotes verified | Same step credit across runs | Score spread |
+  |---|---|---|---|---|---|
+  | 100% (40/40) | 100% (40/40) | 100% (40/40) | 100% (665/667) | 89% (268/300) | avg 0.9 pts |
+
+## Running locally
+
+Requires Node 20.9+.
+
+```bash
+npm install
+cp .env.example .env.local   # add DEEPGRAM_API_KEY and GEMINI_API_KEY (or ANTHROPIC_API_KEY)
+npm run dev                  # http://localhost:3000
+```
+
+No database setup is needed locally: without `DATABASE_URL` an embedded Postgres (PGlite) is created
+in `./data/pglite` and migrated on first use. Audio is stored in `./data/uploads`.
+
+### Working with the sample calls
+
+```bash
+npm run check:keys            # verify the API keys with one tiny request each
+npm run transcribe            # data/recordings/*.mp3 → data/cache/transcripts
+npm run analyze -- --run=r1   # → data/cache/analyses/r1
+npm run eval -- r1 r2 r3      # accuracy + consistency report
+npm run seed                  # load run r1 into the running app (or --live to upload raw audio)
