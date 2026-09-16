@@ -87,3 +87,33 @@ async function Team() {
                   <span className="rounded-full bg-green-soft px-1.5 py-0.5 text-green-ink">{r.grades.green}</span>
                   <span className="rounded-full bg-red-soft px-1.5 py-0.5 text-red-ink">{r.grades.below}</span>
                 </div>
+                <div className="text-[12.5px] text-ink-2">
+                  {r.sales.calls ? `${r.sales.booked}/${r.sales.calls} booked` : null}
+                  {r.sales.calls && r.retention.calls ? <br /> : null}
+                  {r.retention.calls ? `${r.retention.saved}/${r.retention.calls} saved` : null}
+                  {!r.sales.calls && !r.retention.calls ? <span className="text-ink-4">—</span> : null}
+                </div>
+                <div className="min-w-0 text-[13px]">
+                  {r.missed[0] ? (
+                    <>
+                      <span className="font-medium text-ink">{r.missed[0].label}</span>
+                      <span className="text-ink-3"> · missed {r.missed[0].missed}/{r.missed[0].of}</span>
+                    </>
+                  ) : (
+                    <span className="text-green-ink">Hitting every step</span>
+                  )}
+                </div>
+                <SparkBars points={r.history.slice(-12)} />
+                <ChevronRight className="hidden size-4 text-ink-4 lg:block" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Card>
+
+      {gaps.length > 0 && (
+        <Card>
+          <CardHeader title="Team focus for the next call review" subtitle="The steps missed most often across everyone's graded calls" />
+          <div className="grid gap-3 px-5 pb-5 md:grid-cols-3">
+            {gaps.map((g) => (
+              <div key={`${g.card}-${g.itemId}`} className="rounded-[14px] border border-hairline p-4">
