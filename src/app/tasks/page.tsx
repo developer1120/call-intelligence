@@ -27,3 +27,33 @@ async function Tasks() {
   await connection();
   const rows = await listTasks();
   if (!rows.length) {
+    return (
+      <Card>
+        <EmptyState
+          icon={<ListChecks className="size-5" />}
+          title="No tasks yet"
+          action={
+            <ButtonLink href="/" variant="soft">
+              Go to Needs attention
+            </ButtonLink>
+          }
+        >
+          Use Assign on anything in Needs attention, or on a promised follow-up in a call, and it shows up here.
+        </EmptyState>
+      </Card>
+    );
+  }
+  const open = rows
+    .filter((r) => r.task.status === "open")
+    .sort((a, b) => PRIORITY_RANK[a.task.priority] - PRIORITY_RANK[b.task.priority]);
+  const done = rows.filter((r) => r.task.status === "done");
+  const byAssignee = new Map<string, typeof open>();
+  for (const r of open) byAssignee.set(r.task.assignee, [...(byAssignee.get(r.task.assignee) ?? []), r]);
+
+  return (
+    <div className="space-y-6">
+      {[...byAssignee.entries()].map(([assignee, list]) => (
+        <section key={assignee}>
+          <div className="mb-2 flex items-center gap-2 px-1">
+            <Avatar name={assignee} size={22} />
+            <SectionTitle>{assignee}</SectionTitle>

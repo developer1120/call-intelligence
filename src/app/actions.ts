@@ -40,3 +40,24 @@ export async function setTaskStatus(taskId: string, done: boolean) {
 }
 
 export async function deleteTask(taskId: string) {
+  const db = await getDb();
+  await db.delete(tasks).where(eq(tasks.id, taskId));
+  refreshAll();
+}
+
+/** credit: true = award, false = withhold, null = back to the AI's judgement. */
+export async function overrideItem(callId: string, itemId: string, credit: boolean | null) {
+  const db = await getDb();
+  const field = `item:${itemId}`;
+  await db.delete(overrides).where(and(eq(overrides.callId, callId), eq(overrides.field, field)));
+  if (credit !== null) {
+    await db.insert(overrides).values({ id: newId(), callId, field, value: credit ? "credit" : "no_credit" });
+  }
+  await rescoreCall(callId);
+  refreshAll();
+}
+
+export async function overrideCallType(callId: string, callType: CallType | null) {
+  if (callType && !(CALL_TYPES as readonly string[]).includes(callType)) throw new Error("Unknown call type");
+  const db = await getDb();
+  await db.delete(overrides).where(and(eq(overrides.callId, callId), eq(overrides.field, "callType")));
