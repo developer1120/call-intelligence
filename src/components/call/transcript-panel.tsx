@@ -207,3 +207,56 @@ function Scrubber({
   };
   return (
     <div
+      ref={bar}
+      role="slider"
+      aria-label="Seek"
+      aria-valuemin={0}
+      aria-valuemax={Math.round(total)}
+      aria-valuenow={Math.round(time)}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowRight") onSeek(Math.min(total, time + 5));
+        if (e.key === "ArrowLeft") onSeek(Math.max(0, time - 5));
+      }}
+      onPointerDown={(e) => {
+        onSeek(at(e.clientX));
+        const move = (ev: PointerEvent) => onSeek(at(ev.clientX));
+        const up = () => {
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", up);
+        };
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", up);
+      }}
+      className="relative h-5 cursor-pointer touch-none"
+    >
+      <div className="absolute inset-x-0 top-1/2 h-[5px] -translate-y-1/2 rounded-full bg-black/[0.08]">
+        <div className="h-full rounded-full bg-blue" style={{ width: `${(time / total) * 100}%` }} />
+      </div>
+      {markers.map((m, i) => (
+        <span
+          key={i}
+          title={`${formatDuration(m.start)} · ${m.label}`}
+          className={cn("pointer-events-none absolute top-[1px] h-[6px] w-[2px] rounded-full", MARK_COLOR[m.kind])}
+          style={{ left: `${(m.start / total) * 100}%` }}
+        />
+      ))}
+      <span
+        className="pointer-events-none absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-blue shadow"
+        style={{ left: `${(time / total) * 100}%` }}
+      />
+    </div>
+  );
+}
+
+function highlight(text: string, q: string) {
+  const parts: React.ReactNode[] = [];
+  const lower = text.toLowerCase();
+  let i = 0;
+  for (let at = lower.indexOf(q); at !== -1; at = lower.indexOf(q, i)) {
+    parts.push(text.slice(i, at), <mark key={at} className="rounded bg-[#ffe58f] px-0.5 text-ink">{text.slice(at, at + q.length)}</mark>);
+    i = at + q.length;
+  }
+  parts.push(text.slice(i));
+  return parts;
+}
