@@ -72,3 +72,40 @@ async function Team() {
                 href={`/team/${r.id}`}
                 className="grid items-center gap-x-4 gap-y-2 px-5 py-3.5 hover:bg-sunken/60 lg:grid-cols-[minmax(0,1.3fr)_70px_90px_150px_110px_minmax(0,1.2fr)_120px_20px]"
               >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="w-4 text-[12px] text-ink-4 tabular">{idx + 1}</span>
+                  <Avatar name={r.name === "Unidentified" ? null : r.name} size={32} />
+                  <div className="min-w-0">
+                    <div className="truncate text-[14px] font-semibold">{r.name}</div>
+                    <div className="text-[12px] text-ink-3 capitalize">{r.id === "unidentified" ? "Name not said on call" : r.role}</div>
+                  </div>
+                </div>
+                <div className="text-[13.5px] text-ink-2 tabular">{r.calls}</div>
+                <div className={cn("text-[17px] font-semibold tabular", pctTone(r.avgPct))}>{formatPct(r.avgPct)}</div>
+                <div className="flex gap-1.5 text-[12px] font-medium tabular">
+                  <span className="rounded-full bg-gold-soft px-1.5 py-0.5 text-gold-ink">{r.grades.gold} Gold</span>
+                  <span className="rounded-full bg-green-soft px-1.5 py-0.5 text-green-ink">{r.grades.green}</span>
+                  <span className="rounded-full bg-red-soft px-1.5 py-0.5 text-red-ink">{r.grades.below}</span>
+                </div>
+                <div className="text-[12.5px] text-ink-2">
+                  {r.sales.calls ? `${r.sales.booked}/${r.sales.calls} booked` : null}
+                  {r.sales.calls && r.retention.calls ? <br /> : null}
+                  {r.retention.calls ? `${r.retention.saved}/${r.retention.calls} saved` : null}
+                  {!r.sales.calls && !r.retention.calls ? <span className="text-ink-4">—</span> : null}
+                </div>
+                <div className="min-w-0 text-[13px]">
+                  {r.missed[0] ? (
+                    <>
+                      <span className="font-medium text-ink">{r.missed[0].label}</span>
+                      <span className="text-ink-3"> · missed {r.missed[0].missed}/{r.missed[0].of}</span>
+                    </>
+                  ) : (
+                    <span className="text-green-ink">Hitting every step</span>
+                  )}
+                </div>
+                <SparkBars points={r.history.slice(-12)} />
+                <ChevronRight className="hidden size-4 text-ink-4 lg:block" />
+              </Link>
+            </li>
+          ))}
+        </ul>

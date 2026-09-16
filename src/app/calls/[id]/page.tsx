@@ -115,3 +115,42 @@ async function CallDetail({ params }: { params: Promise<{ id: string }> }) {
           <div className="min-w-0 space-y-5">
             <Hero a={a} />
             <TrustBar a={a} typeOverridden={typeOverridden} />
+            <div className="lg:hidden">
+              <Card className="h-[70vh] overflow-hidden">
+                <TranscriptPanel utterances={transcript.utterances} speakers={a.speakers} markers={markers} />
+              </Card>
+            </div>
+            <CoachingCard a={a} />
+            <ScorecardCard a={a} callId={call.id} />
+            <NextSteps a={a} callId={call.id} callLabel={call.label} tasks={d.tasks} people={people} />
+            <DetailsCard a={a} />
+            <p className="px-1 pb-4 text-[11.5px] text-ink-4">
+              Analyzed by {a.model} · prompt {a.promptVersion} · transcript {transcript.model}
+              {call.transcriptSource === "cache" ? " (pre-transcribed sample)" : ""} · card numbers redacted
+              {d.previousCount > 0 ? ` · ${d.previousCount} earlier version${d.previousCount > 1 ? "s" : ""} kept` : ""}
+            </p>
+          </div>
+          <div className="hidden lg:block">
+            <Card className="sticky top-6 h-[calc(100vh-48px)] overflow-hidden">
+              <TranscriptPanel utterances={transcript.utterances} speakers={a.speakers} markers={markers} />
+            </Card>
+          </div>
+        </div>
+      </Page>
+    </PlayerProvider>
+  );
+}
+
+function buildMarkers(a: CallAnalysis): Marker[] {
+  const out: Marker[] = [];
+  for (const it of a.scorecard?.items ?? []) {
+    if (it.status === "not_needed") continue;
+    const e = it.evidence.find((x) => x.verified);
+    if (e) out.push({ u: e.u, start: e.start, kind: it.credited ? "met" : "missed", label: `${it.label}: ${it.credited ? "done" : "missed"}` });
+  }
+  for (const r of a.risks) if (r.evidence.verified) out.push({ u: r.evidence.u, start: r.evidence.start, kind: "risk", label: r.description });
+  const o = a.outcome.evidence.find((x) => x.verified);
+  if (o) out.push({ u: o.u, start: o.start, kind: "moment", label: "Outcome" });
+  return out;
+}
+

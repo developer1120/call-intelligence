@@ -73,3 +73,40 @@ function pct(x: { ok: number; of: number }) {
   return x.of ? Math.round((x.ok / x.of) * 100) : 0;
 }
 
+export default function ScoringPage() {
+  const c = summary.consistency;
+  const metrics = [
+    { label: "Call type matches a human reading", value: pct(summary.accuracy.callType), detail: `${summary.accuracy.callType.ok}/${summary.accuracy.callType.of} call analyses` },
+    { label: "Outcome matches a human reading", value: pct(summary.accuracy.outcome), detail: `${summary.accuracy.outcome.ok}/${summary.accuracy.outcome.of}` },
+    { label: "Rep identified correctly", value: pct(summary.accuracy.rep), detail: `${summary.accuracy.rep.ok}/${summary.accuracy.rep.of}` },
+    { label: "Cited quotes found word-for-word", value: pct(summary.accuracy.quotesVerified), detail: `${summary.accuracy.quotesVerified.ok}/${summary.accuracy.quotesVerified.of} quotes` },
+    ...(c
+      ? [
+          { label: "Same step credit when re-run", value: pct(c.steps), detail: `${c.steps.ok}/${c.steps.of} steps · avg ±${c.scoreSpreadAvg} pts` },
+        ]
+      : []),
+  ];
+
+  return (
+    <Page className="max-w-[1100px]">
+      <PageHeader
+        title="How scoring works"
+        subtitle="What happens to every call, the rules behind each point, and how accurate it is on real calls."
+      />
+
+      <Card className="mb-5">
+        <CardHeader title="From recording to coaching" subtitle="About a minute per call" />
+        <ol className="grid gap-3 px-5 pb-5 md:grid-cols-5">
+          {STEPS.map((s, i) => (
+            <li key={s.title} className="rounded-[14px] bg-sunken/70 p-4">
+              <div className="flex items-center gap-2">
+                <span className="grid size-7 place-items-center rounded-[9px] bg-surface text-blue shadow-sm">
+                  <s.icon className="size-4" />
+                </span>
+                <span className="text-[11px] font-semibold text-ink-4">STEP {i + 1}</span>
+              </div>
+              <div className="mt-2.5 text-[14px] font-semibold">{s.title}</div>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-ink-3">{s.body}</p>
+            </li>
+          ))}
+        </ol>

@@ -101,3 +101,38 @@ ${misses.length ? misses.join("\n") : "None."}
 |---|---|---|---|---|---|
 ${rows.join("\n")}
 `;
+
+fs.writeFileSync(path.join(ROOT, "data", "eval", "report.md"), report);
+// Machine-readable summary shown on the app's "How scoring works" page.
+const models = [...new Set(byRun.flatMap((r) => ids.map((id) => r[id].model)))];
+fs.writeFileSync(
+  path.join(ROOT, "data", "eval", "summary.json"),
+  JSON.stringify(
+    {
+      generatedAt: new Date().toISOString(),
+      runs: runs.length,
+      calls: ids.length,
+      models,
+      promptVersions: [...new Set(byRun.flatMap((r) => ids.map((id) => r[id].promptVersion)))],
+      accuracy: {
+        callType: { ok: typeOk, of: total },
+        outcome: { ok: outcomeOk, of: total },
+        rep: { ok: repOk, of: total },
+        quotesVerified: { ok: verified, of: quotes },
+      },
+      consistency:
+        byRun.length > 1
+          ? {
+              callType: { ok: typeAgree, of: ids.length },
+              outcome: { ok: outcomeAgree, of: ids.length },
+              steps: { ok: itemAgree, of: itemTotal },
+              scoreSpreadAvg: Number((spreadSum / Math.max(1, graded)).toFixed(2)),
+              scoreSpreadMax: spreadMax,
+            }
+          : null,
+    },
+    null,
+    2,
+  ),
+);
+console.log(report);
