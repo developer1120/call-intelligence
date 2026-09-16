@@ -61,3 +61,25 @@ export async function overrideCallType(callId: string, callType: CallType | null
   if (callType && !(CALL_TYPES as readonly string[]).includes(callType)) throw new Error("Unknown call type");
   const db = await getDb();
   await db.delete(overrides).where(and(eq(overrides.callId, callId), eq(overrides.field, "callType")));
+  // Item overrides belong to the old scorecard.
+  if (callType) {
+    const rows = await db.select().from(overrides).where(eq(overrides.callId, callId));
+    for (const r of rows) if (r.field.startsWith("item:")) await db.delete(overrides).where(eq(overrides.id, r.id));
+    await db.insert(overrides).values({ id: newId(), callId, field: "callType", value: callType });
+  }
+  await rescoreCall(callId);
+  refreshAll();
+}
+
+export async function reprocessCall(callId: string, retranscribe = false) {
+  const db = await getDb();
+  await db.update(calls).set({ status: "queued", error: null, stageStartedAt: new Date() }).where(eq(calls.id, callId));
+  after(() => enqueue(callId, { retranscribe }));
+  refreshAll();
+}
+
+export async function deleteCall(callId: string) {
+  const db = await getDb();
+  await db.delete(calls).where(eq(calls.id, callId));
+  refreshAll();
+}
