@@ -117,3 +117,33 @@ async function Team() {
           <div className="grid gap-3 px-5 pb-5 md:grid-cols-3">
             {gaps.map((g) => (
               <div key={`${g.card}-${g.itemId}`} className="rounded-[14px] border border-hairline p-4">
+                <div className="text-[12px] text-ink-3 capitalize">{g.card === "service" ? "All calls" : g.card} scorecard</div>
+                <div className="mt-0.5 text-[15px] font-semibold">{g.label}</div>
+                <div className="mt-1 text-[13px] text-red-ink">
+                  Missed on {g.of - g.met} of {plural(g.of, "call")}
+                </div>
+                {g.line ? (
+                  <Link href={`/calls/${g.line.callId}`} className="mt-3 flex gap-2 rounded-[12px] bg-blue-soft/70 p-3 hover:bg-blue-soft">
+                    <MessageSquareQuote className="mt-0.5 size-4 shrink-0 text-blue" />
+                    <div>
+                      <p className="text-[13px] leading-relaxed text-ink">“{g.line.tryThis}”</p>
+                      <div className="mt-1 text-[11.5px] text-blue-ink">From {g.line.label} →</div>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="mt-3 flex gap-2 rounded-[12px] bg-sunken p-3">
+                    <MessageSquareQuote className="mt-0.5 size-4 shrink-0 text-ink-3" />
+                    <div>
+                      <p className="text-[13px] leading-relaxed text-ink">“{EXAMPLE.get(g.itemId)}”</p>
+                      <div className="mt-1 text-[11.5px] text-ink-3">Example from the call manual</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
