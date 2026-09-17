@@ -77,3 +77,30 @@ npm run transcribe            # data/recordings/*.mp3 → data/cache/transcripts
 npm run analyze -- --run=r1   # → data/cache/analyses/r1
 npm run eval -- r1 r2 r3      # accuracy + consistency report
 npm run seed                  # load run r1 into the running app (or --live to upload raw audio)
+npm test                      # unit tests: evidence matching, scoring rules, revenue, masking
+```
+
+## Deploying
+
+Vercel + Neon Postgres + private Vercel Blob. Set `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, the API
+keys and `ADMIN_TOKEN` (protects the seed import endpoint). Browser uploads go straight to Blob, so the
+4.5 MB function body limit doesn't apply.
+
+## Project layout
+
+```
+src/lib/analysis      rubrics, taxonomy, prompts, schemas, analyze (assembly + rules), verify, providers
+src/lib/transcription Deepgram client, contact-detail masking, card read-back redaction
+src/lib/pipeline.ts   processing queue, stage tracking, overrides, re-scoring
+src/lib/insights.ts   needs-attention ranking, team stats, step rates (deterministic)
+src/app               overview, calls, call detail, coaching, tasks, API routes, server actions
+scripts               transcribe, analyze, eval, seed, check-keys
+```
+
+## Known limits (V1)
+
+* No authentication or multi-tenant isolation yet; PestLaunch OS would provide both.
+* Call date, rep and direction aren't in the sample data, so the rep comes from the conversation and
+  trends use call order.
+* Revenue uses prices said on the call; otherwise an estimated first-year customer value
+  (`DEFAULT_ANNUAL_VALUE`, marked "est.").
