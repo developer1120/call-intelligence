@@ -110,3 +110,41 @@ export default function ScoringPage() {
             </li>
           ))}
         </ol>
+      </Card>
+
+      <Card className="mb-5">
+        <CardHeader
+          title="Measured on the 20 sample calls"
+          subtitle={`Every call was read by a person and labeled by hand, then compared with ${summary.runs} independent AI runs (${summary.models.join(", ")}).`}
+        />
+        <div className="grid grid-cols-2 gap-3 px-5 pb-5 md:grid-cols-5">
+          {metrics.map((m) => (
+            <div key={m.label} className="rounded-[14px] border border-hairline p-4">
+              <div className={cn("font-display text-[30px] leading-none font-semibold tabular", m.value >= 95 ? "text-green-ink" : m.value >= 85 ? "text-orange-ink" : "text-red-ink")}>
+                {m.value}%
+              </div>
+              <div className="mt-2 text-[12.5px] leading-snug font-medium text-ink-2">{m.label}</div>
+              <div className="mt-1 text-[11.5px] text-ink-4">{m.detail}</div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <div className="mb-5 grid gap-5 md:grid-cols-2">
+        {POLICIES.map((p) => (
+          <Card key={p.title} className="p-5">
+            <div className="flex items-start gap-3">
+              <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-blue-soft text-blue-ink">
+                <p.icon className="size-4" />
+              </span>
+              <div>
+                <div className="text-[14.5px] font-semibold">{p.title}</div>
+                <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{p.body}</p>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        {Object.values(SCORECARDS).map((card) => {
