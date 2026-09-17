@@ -57,3 +57,33 @@ async function Tasks() {
           <div className="mb-2 flex items-center gap-2 px-1">
             <Avatar name={assignee} size={22} />
             <SectionTitle>{assignee}</SectionTitle>
+            <span className="text-[12px] text-ink-4">{list.length}</span>
+          </div>
+          <Card>
+            <ul className="divide-y divide-hairline/80">
+              {list.map((r) => (
+                <TaskRow key={r.task.id} r={r} />
+              ))}
+            </ul>
+          </Card>
+        </section>
+      ))}
+      {open.length === 0 && (
+        <Card>
+          <EmptyState icon={<ListChecks className="size-5" />} title="Everything's done">
+            Nice work. New items show up on the Overview as calls come in.
+          </EmptyState>
+        </Card>
+      )}
+      {done.length > 0 && (
+        <section>
+          <SectionTitle className="mb-2 px-1">Done · {done.length}</SectionTitle>
+          <Card>
+            <ul className="divide-y divide-hairline/80">
+              {done.map((r) => (
+                <TaskRow key={r.task.id} r={r} />
+              ))}
+            </ul>
+          </Card>
+        </section>
+      )}
