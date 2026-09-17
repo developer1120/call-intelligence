@@ -75,3 +75,42 @@ async function Rep({ params }: { params: Promise<{ id: string }> }) {
           <div className="text-[12.5px] font-medium text-ink-3">Results</div>
           <div className="mt-1.5 text-[14px] text-ink">
             {r.sales.calls ? <div>{r.sales.booked}/{r.sales.calls} new customers booked</div> : null}
+            {r.retention.calls ? <div>{r.retention.saved}/{r.retention.calls} cancellations saved</div> : null}
+            {!r.sales.calls && !r.retention.calls && <span className="text-ink-3">Service calls only</span>}
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-[12.5px] font-medium text-ink-3">Score by call</div>
+          <div className="mt-2">
+            <SparkBars points={r.history} height={40} linked />
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-5">
+          <Card>
+            <CardHeader
+              title="Coaching plan"
+              subtitle="The steps to practice, in order, with lines written from this rep's own calls"
+              icon={
+                <span className="grid size-7 place-items-center rounded-[9px] bg-violet-soft text-violet">
+                  <Target className="size-4" />
+                </span>
+              }
+            />
+            <div className="space-y-3 px-5 pb-5">
+              {plan.length === 0 && <p className="text-[13.5px] text-green-ink">Hitting every scorecard step. Use their calls as examples for the team.</p>}
+              {plan.map((p, i) => (
+                <div key={p.itemId} className="rounded-[14px] border border-hairline p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5">
+                      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-sunken text-[12px] font-semibold">{i + 1}</span>
+                      <div>
+                        <div className="text-[14.5px] font-semibold">{p.label}</div>
+                        <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-3">{p.standard}</p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-[12.5px] font-medium text-red-ink tabular">
+                      missed {p.missed}/{p.of}
+                    </span>
