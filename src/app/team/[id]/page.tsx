@@ -153,3 +153,42 @@ async function Rep({ params }: { params: Promise<{ id: string }> }) {
           </Card>
         </div>
 
+        <Card className="self-start">
+          <CardHeader title="Strengths" subtitle="Steps hit on every call" />
+          <div className="px-5 pb-5">
+            {r.strengths.length === 0 ? (
+              <p className="text-[13px] text-ink-3">No step hit on every call yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {r.strengths.map((s) => (
+                  <li key={s.itemId} className="flex items-center gap-2 text-[13.5px]">
+                    <CircleCheck className="size-4 text-green" />
+                    <span className="flex-1">{s.label}</span>
+                    <span className="text-[12px] text-ink-3 tabular">
+                      {s.met}/{s.of}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {r.missed.length > 3 && (
+              <>
+                <SectionTitle className="mt-5 mb-2">Also missed</SectionTitle>
+                <ul className="space-y-1.5">
+                  {r.missed.slice(3, 9).map((m) => (
+                    <li key={m.itemId} className="flex justify-between text-[13px] text-ink-2">
+                      <span>{m.label}</span>
+                      <span className="text-ink-3 tabular">
+                        {m.missed}/{m.of}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        </Card>
+      </div>
+    </>
+  );
+}

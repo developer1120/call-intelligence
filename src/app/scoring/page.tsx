@@ -148,3 +148,41 @@ export default function ScoringPage() {
 
       <div className="grid gap-5 lg:grid-cols-3">
         {Object.values(SCORECARDS).map((card) => {
+          const quadrants = [...new Set(card.items.map((i) => i.quadrant))];
+          return (
+            <Card key={card.id} className="self-start">
+              <CardHeader
+                title={card.name.replace(" (All Calls)", "")}
+                subtitle={`${card.items.length} points · Gold ${card.bands.gold} · Green ${card.bands.green}+ · from the ${card.source}`}
+              />
+              <div className="space-y-4 px-5 pb-5">
+                {quadrants.map((q) => (
+                  <div key={q}>
+                    <SectionTitle className="mb-1.5">{q}</SectionTitle>
+                    <ul className="space-y-1.5">
+                      {card.items
+                        .filter((i) => i.quadrant === q)
+                        .map((i) => (
+                          <li key={i.id} className="flex items-start gap-2 text-[13px] text-ink-2" title={i.standard}>
+                            <CircleCheck className="mt-0.5 size-3.5 shrink-0 text-ink-4" />
+                            <span>
+                              {i.label}
+                              {i.creditWhenNotNeeded && <span className="text-ink-4"> · credited when not needed</span>}
+                            </span>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+      <p className="mt-5 px-1 text-[11.5px] text-ink-4">
+        Measured {new Date(summary.generatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} · prompt{" "}
+        {summary.promptVersions.join(", ")} · run <code>npm run eval</code> to re-measure.
+      </p>
+    </Page>
+  );
+}
