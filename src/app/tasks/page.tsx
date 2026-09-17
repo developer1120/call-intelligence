@@ -87,3 +87,33 @@ async function Tasks() {
           </Card>
         </section>
       )}
+    </div>
+  );
+}
+
+function TaskRow({ r }: { r: Awaited<ReturnType<typeof listTasks>>[number] }) {
+  const t = r.task;
+  const done = t.status === "done";
+  return (
+    <li className="group flex items-start gap-3 px-4 py-3.5">
+      <div className="pt-0.5">
+        <TaskCheck id={t.id} done={done} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className={cn("text-[14px] font-medium", done ? "text-ink-3 line-through" : "text-ink")}>{t.title}</div>
+        {t.detail && <div className="mt-0.5 line-clamp-2 text-[12.5px] text-ink-3">{t.detail}</div>}
+        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[12px] text-ink-3">
+          {t.priority === "high" && !done && <Badge tone="red">High</Badge>}
+          {done && t.completedAt && <span>Done {t.completedAt.toLocaleDateString()}</span>}
+          {done && <span>· {t.assignee}</span>}
+          {r.callLabel && t.callId && (
+            <Link href={`/calls/${t.callId}`} className="inline-flex items-center gap-0.5 font-medium text-blue hover:underline">
+              {r.callLabel} <ArrowUpRight className="size-3" />
+            </Link>
+          )}
+        </div>
+      </div>
+      <TaskDelete id={t.id} />
+    </li>
+  );
+}

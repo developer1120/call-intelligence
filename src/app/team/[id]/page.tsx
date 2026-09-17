@@ -114,3 +114,42 @@ async function Rep({ params }: { params: Promise<{ id: string }> }) {
                     <span className="shrink-0 text-[12.5px] font-medium text-red-ink tabular">
                       missed {p.missed}/{p.of}
                     </span>
+                  </div>
+                  {p.lines.map((l, j) => (
+                    <Link key={j} href={`/calls/${l.callId}`} className="mt-3 ml-[34px] flex gap-2 rounded-[12px] bg-blue-soft/70 p-3 hover:bg-blue-soft">
+                      <MessageSquareQuote className="mt-0.5 size-4 shrink-0 text-blue" />
+                      <div>
+                        <p className="text-[13px] leading-relaxed text-ink">“{l.tryThis}”</p>
+                        <div className="mt-1 text-[11.5px] text-blue-ink">{l.callLabel} · {l.title} →</div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader title="Calls" subtitle={plural(mine.length, "call")} />
+            <ul className="divide-y divide-hairline/80 border-t border-hairline/80">
+              {mine.map((c) => (
+                <li key={c.call.id}>
+                  <Link href={`/calls/${c.call.id}`} className="flex flex-wrap items-center gap-3 px-5 py-3 hover:bg-sunken/60">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13.5px] font-semibold">
+                        {c.call.label}
+                        {c.analysis.customerName ? <span className="font-normal text-ink-2"> · {c.analysis.customerName}</span> : null}
+                      </div>
+                      <div className="truncate text-[12.5px] text-ink-3">{c.analysis.outcome.headline}</div>
+                    </div>
+                    <CallTypeBadge type={c.analysis.callType} />
+                    <OutcomeBadge outcome={c.analysis.outcome.result} />
+                    <ScorePill value={c.analysis.scorecard} />
+                    <span className="w-10 text-right text-[12.5px] text-ink-3 tabular">{formatDuration(c.call.durationSec)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+
